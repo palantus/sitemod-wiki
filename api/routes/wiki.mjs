@@ -4,6 +4,7 @@ const route = Router();
 import Entity from "entitystorage";
 import Showdown from "showdown"
 import {validateAccess} from "../../../../services/auth.mjs"
+import { getTimestamp } from "../../../../tools/date.mjs"
 
 
 export let createId = id => id.replace(/^\s+|\s+$/g, '') // trim
@@ -70,7 +71,7 @@ export default (app) => {
   route.patch('/:id', function (req, res, next) {
     if(!validateAccess(req, res, {role: "team"})) return;
     let id = createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id)
+    let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
     
     if(req.body.body !== undefined) {
       wiki.body = req.body.body
@@ -89,6 +90,7 @@ export default (app) => {
       tags.push(...wiki.tags.filter(t => !t.startsWith("user-"))) // Include default tags
       wiki.tag(tags, true);
     }
+    wiki.prop("modified", getTimestamp())
 
     res.json({id: wiki.id, title: wiki.title||wiki.id, body: wiki.body, html: wiki.html||""});
   });
