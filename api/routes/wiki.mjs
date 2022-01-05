@@ -2,8 +2,8 @@ import express from "express"
 const { Router, Request, Response } = express;
 const route = Router();
 import Entity from "entitystorage";
-import {getTimestamp} from "../../../../tools/date.mjs"
 import Showdown from "showdown"
+import {validateAccess} from "../../../../services/auth.mjs"
 
 
 export let createId = id => id.replace(/^\s+|\s+$/g, '') // trim
@@ -26,19 +26,6 @@ export let convertBody = md => {
   return converter.makeHtml(bodyConverted);
 }
 
-let templates = [
-  {regex: /issue\-([\d]+)/, generate: function (pageId) {
-    let issueId = this.regex.exec(pageId)[1]
-    let issue = Entity.find(`tag:issue prop:"id=${issueId}"`)
-    return `Title: ${issue.title}\n[Open issue](/issue/${issueId})\n\n`
-  }},
-  {regex: /forum\-thread\-([\d]+)/, generate: function (pageId) {
-    let threadId = this.regex.exec(pageId)[1]
-    let thread = Entity.find(`tag:forumthread prop:"id=${threadId}"`)
-    return `Title: ${thread.title}\n[Open thread](/forum/thread/${thread.id})\n\n`
-  }}
-]
-
 export default (app) => {
 
   const route = Router();
@@ -53,32 +40,27 @@ export default (app) => {
     let wiki = id ? Entity.find(`tag:wiki prop:id=${id}`) : null
     res.json(wiki?true:false)
   })
-
-  route.get("/:id/template", (req, res, next) => {
-    let id = createId(req.params.id)
-    let template = templates.find(t => t.regex.test(id))
-    res.json({id: id, body: template?.generate.call(template, id) || null})
-  })
-
   route.get('/search', function (req, res, next) {
     if(!req.query.filter) return []
-    let pages = Entity.search(`tag:wiki (${req.query.filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}")`).join(" ")})`)
+    let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -]/g, '') //Remove invalid chars
+    let pages = Entity.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
     res.json(pages.map(p => ({id: p.id, title: p.title})))
   });
 
   route.get('/:id', function (req, res, next) {
     let id = createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
-    let title = id == "index" ? "Wiki Index" : wiki?.title || id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
+    let title = wiki?.title || (id == "index" ? "Wiki Index" : id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " "))
     if (wiki) {
       if(wiki.body && wiki.html === undefined) wiki.html = convertBody(wiki.body)
-      res.json({id: wiki.id, title, body: wiki.body, html: wiki.html||"", exists: true});
+      res.json({id: wiki.id, title, body: wiki.body, html: wiki.html||"", exists: true, tags: wiki.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5))});
     } else {
-      res.json({id, title, body: "", html: "", exists: false})
+      res.json({id, title, body: "", html: "", exists: false, tags: []})
     }
   });
 
   route.delete('/:id', function (req, res, next) {
+    if(!validateAccess(req, res, {role: "team"})) return;
     let id = createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
     if (wiki) wiki.delete();
@@ -86,6 +68,7 @@ export default (app) => {
   });
 
   route.patch('/:id', function (req, res, next) {
+    if(!validateAccess(req, res, {role: "team"})) return;
     let id = createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id)
     
@@ -97,6 +80,14 @@ export default (app) => {
 
     if(wiki.body && !wiki.title){
       wiki.title = id == "index" ? "Wiki Index" : id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
+    }
+    if(req.body.tags){
+      let tags = typeof req.body.tags === "string" ? req.body.tags.split(",").map(t => "user-" + t.trim())
+                                                   : Array.isArray(req.body.tags) 
+                                                      ? req.body.tags.map(t => "user-" + t.trim())
+                                                      : wiki.tags
+      tags.push(...wiki.tags.filter(t => !t.startsWith("user-"))) // Include default tags
+      wiki.tag(tags, true);
     }
 
     res.json({id: wiki.id, title: wiki.title||wiki.id, body: wiki.body, html: wiki.html||""});

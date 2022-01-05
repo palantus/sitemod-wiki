@@ -5,6 +5,7 @@ import {on, off} from "/system/events.mjs"
 import {default as api, userRoles} from "/system/api.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
+import "/components/field-edit.mjs"
 
 import "https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"
 import { promptDialog } from "../../components/dialog.mjs"
@@ -27,10 +28,12 @@ template.innerHTML = `
       background: rgba(255, 255, 255, 0.4);
       opacity: 1;
     }
+    #tag-container{border-left: 1px solid gray; margin-left: 10px; padding-left: 20px;}
     
     #rendered table{border-collapse: collapse;}
     #rendered table th{text-align: left; border-bottom: 1px solid black;}
     #rendered table th, #rendered table td{padding-right: 5px;}
+    
   </style>
 
   <action-bar>
@@ -39,6 +42,11 @@ template.innerHTML = `
       <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
       <action-bar-item id="search-btn">Search</action-bar-item>
       <action-bar-item class="hidden" id="delete-btn">Delete</action-bar-item>
+      
+      <span id="tag-container" class="hidden">
+        <label for="tags">Tags:</label>
+        <field-edit type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
+      </span>
   </action-bar>
     
   <div id="container">
@@ -81,16 +89,23 @@ class Element extends HTMLElement {
       if(roles.includes("admin") || roles.includes("admin")){
         this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
         this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
+        this.shadowRoot.getElementById("tag-container").classList.remove("hidden")
       }
     })
   }
 
   async refreshData(){
     this.page = await api.get(`wiki/${this.pageId}`)
-    if(!this.page) return;
+    if(!this.page) {
+      this.shadowRoot.getElementById("tags").setAttribute("patch", ``)
+      this.shadowRoot.getElementById("tags").setAttribute("value", "")
+      return;
+    }
 
     this.shadowRoot.getElementById("title").innerText = this.page.title
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
+    this.shadowRoot.getElementById("tags").setAttribute("value", this.page.tags.join(", "))
+    this.shadowRoot.getElementById("tags").setAttribute("patch", `wiki/${this.pageId}`)
   }
 
   editClicked(){
@@ -128,9 +143,6 @@ class Element extends HTMLElement {
         spellChecker: false,
         showIcons: ["code", "table"]
       });
-    }
-    if(!this.page.body){
-      this.page.body = (await api.get(`wiki/${this.pageId}/template`))?.body || ""
     }
     this.simplemde.value(this.page.body)
 
