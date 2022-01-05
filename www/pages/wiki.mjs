@@ -86,7 +86,7 @@ class Element extends HTMLElement {
     this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1] || "index"
 
     userRoles().then(roles => {
-      if(roles.includes("admin") || roles.includes("admin")){
+      if(roles.includes("team")){
         this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
         this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
         this.shadowRoot.getElementById("tag-container").classList.remove("hidden")
