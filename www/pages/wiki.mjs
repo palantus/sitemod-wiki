@@ -2,7 +2,7 @@ const elementName = 'wiki-page'
 
 import {state, goto} from "/system/core.mjs"
 import {on, off} from "/system/events.mjs"
-import api from "/system/api.mjs"
+import {default as api, userRoles} from "/system/api.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 
@@ -34,11 +34,11 @@ template.innerHTML = `
   </style>
 
   <action-bar>
-      <action-bar-item id="edit-btn">Edit</action-bar-item>
+      <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
       <action-bar-item class="hidden" id="save-btn">Save</action-bar-item>
       <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
       <action-bar-item id="search-btn">Search</action-bar-item>
-      <action-bar-item id="delete-btn">Delete</action-bar-item>
+      <action-bar-item class="hidden" id="delete-btn">Delete</action-bar-item>
   </action-bar>
     
   <div id="container">
@@ -76,11 +76,19 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("delete-btn").addEventListener("click", this.deletePage)
 
     this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1] || "index"
+
+    userRoles().then(roles => {
+      if(roles.includes("admin") || roles.includes("admin")){
+        this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
+        this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
+      }
+    })
   }
 
   async refreshData(){
     this.page = await api.get(`wiki/${this.pageId}`)
-    
+    if(!this.page) return;
+
     this.shadowRoot.getElementById("title").innerText = this.page.title
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
   }
