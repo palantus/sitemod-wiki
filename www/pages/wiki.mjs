@@ -1,11 +1,14 @@
 const elementName = 'wiki-page'
 
-import {state, goto} from "/system/core.mjs"
+import {state, goto, apiURL} from "/system/core.mjs"
 import {on, off} from "/system/events.mjs"
 import {default as api, userRoles} from "/system/api.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/field-edit.mjs"
+
+import "/libs/inline-attachment.js"
+import "/libs/codemirror-4.inline-attachment.js"
 
 import "https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"
 import { promptDialog } from "../../components/dialog.mjs"
@@ -143,6 +146,12 @@ class Element extends HTMLElement {
         spellChecker: false,
         showIcons: ["code", "table"]
       });
+      inlineAttachment.editors.codemirror4.attach(this.simplemde.codemirror, {
+        uploadUrl: `${apiURL()}/file/upload-single?tags=wiki-image`,
+        extraHeaders: api.getHeaders(),
+        jsonFieldName: "downloadUrl",
+        urlText: "![image]({filename})"
+      })
     }
     this.simplemde.value(this.page.body)
 
