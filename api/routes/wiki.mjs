@@ -16,7 +16,7 @@ export let createId = id => id.replace(/^\s+|\s+$/g, '') // trim
 
 export let convertBody = md => {
   if(!md) return ""
-  let bodyConverted = md.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Entity.find(`tag:wiki prop:id=${pageId}`)?.title||pageId}](/wiki/${pageId})`)
+  let bodyConverted = md.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Entity.find(`tag:wiki prop:id=${pageId}`)?.title||idToTitle(pageId)}](/wiki/${pageId})`)
                         .replace(/\[\[(\/[a-zA-Z0-9\-\/\?\&\=]+)\]\]/g, (grp, link) => `[${link.substr(link.lastIndexOf("/")+1)}](${link})`)
   let converter = new Showdown.Converter({
     tables: true,
@@ -26,6 +26,8 @@ export let convertBody = md => {
   })
   return converter.makeHtml(bodyConverted);
 }
+
+let idToTitle = id => id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
 
 export default (app) => {
 
@@ -51,7 +53,7 @@ export default (app) => {
   route.get('/:id', function (req, res, next) {
     let id = createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
-    let title = wiki?.title || (id == "index" ? "Wiki Index" : id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " "))
+    let title = wiki?.title || (id == "index" ? "Wiki Index" : idToTitle(id))
     if (wiki) {
       if(wiki.body && wiki.html === undefined) wiki.html = convertBody(wiki.body)
       res.json({id: wiki.id, title, body: wiki.body, html: wiki.html||"", exists: true, tags: wiki.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5))});
@@ -80,7 +82,7 @@ export default (app) => {
     if(req.body.title !== undefined) wiki.title = req.body.title;
 
     if(wiki.body && !wiki.title){
-      wiki.title = id == "index" ? "Wiki Index" : id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
+      wiki.title = id == "index" ? "Wiki Index" : idToTitle(id)
     }
     if(req.body.tags){
       let tags = typeof req.body.tags === "string" ? req.body.tags.split(",").map(t => "user-" + t.trim())
