@@ -149,8 +149,8 @@ class Element extends HTMLElement {
       inlineAttachment.editors.codemirror4.attach(this.simplemde.codemirror, {
         uploadUrl: `${apiURL()}/file/upload-single?tags=wiki-image`,
         extraHeaders: api.getHeaders(),
-        jsonFieldName: "downloadUrl",
-        urlText: "![image]({filename})"
+        jsonFieldName: "hash",
+        urlText: "![image](/img/{filename})"
       })
     }
     this.simplemde.value(this.page.body)

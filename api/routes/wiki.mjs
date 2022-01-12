@@ -5,7 +5,9 @@ import Entity from "entitystorage";
 import Showdown from "showdown"
 import {validateAccess} from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
-
+import {config} from "../../../../loaders/express.mjs"
+import {service as userService} from "../../../../services/user.mjs"
+import File from "../../../files/models/file.mjs"
 
 export let createId = id => id.replace(/^\s+|\s+$/g, '') // trim
                         .toLowerCase()
@@ -55,8 +57,12 @@ export default (app) => {
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
     let title = wiki?.title || (id == "index" ? "Wiki Index" : idToTitle(id))
     if (wiki) {
-      if(wiki.body && wiki.html === undefined) wiki.html = convertBody(wiki.body)
-      res.json({id: wiki.id, title, body: wiki.body, html: wiki.html||"", exists: true, tags: wiki.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5))});
+      if(wiki.body && wiki.html === undefined) 
+        wiki.html = convertBody(wiki.body)
+
+      let html = (wiki.html||"").replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => `${config().apiURL}/file/dl/${id}?token=${userService.getTempAuthToken(res.locals.user)}`) //Replace image urls
+
+      res.json({id: wiki.id, title, body: wiki.body, html, exists: true, tags: wiki.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5))});
     } else {
       res.json({id, title, body: "", html: "", exists: false, tags: []})
     }
@@ -78,6 +84,17 @@ export default (app) => {
     if(req.body.body !== undefined) {
       wiki.body = req.body.body
       wiki.html = convertBody(req.body.body)
+
+      // Update file references:
+      let files = [...wiki.html.matchAll(/(\/img\/([\da-zA-Z]+))/g)].map(i => i[2]).map(id => File.lookup(id)).filter(f => f != null)
+      let ids = files.map(f => f._id)
+      for(let r of wiki.rels.image||[]){
+        if(!ids.includes(r._id))
+          r.delete()
+      }
+      for(let f of files){
+        wiki.rel(f, "image")
+      }
     };
     if(req.body.title !== undefined) wiki.title = req.body.title;
 
