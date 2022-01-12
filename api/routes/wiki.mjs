@@ -57,7 +57,7 @@ export default (app) => {
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
     let title = wiki?.title || (id == "index" ? "Wiki Index" : idToTitle(id))
     if (wiki) {
-      if(wiki.body && wiki.html === undefined) 
+      if(wiki.body && !wiki.html) 
         wiki.html = convertBody(wiki.body)
 
       let html = (wiki.html||"").replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => `${config().apiURL}/file/dl/${id}?token=${userService.getTempAuthToken(res.locals.user)}`) //Replace image urls

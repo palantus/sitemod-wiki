@@ -36,6 +36,8 @@ template.innerHTML = `
     #rendered table{border-collapse: collapse;}
     #rendered table th{text-align: left; border-bottom: 1px solid black;}
     #rendered table th, #rendered table td{padding-right: 5px;}
+    #rendered table td{border-left: 1px solid gray;}
+    #rendered table tr{vertical-align: top; border-bottom: 1px solid gray;}
     
   </style>
 
