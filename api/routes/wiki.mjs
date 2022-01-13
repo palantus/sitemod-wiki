@@ -122,21 +122,25 @@ export default (app) => {
       let fileObj = Array.isArray(req.files[filedef]) ? req.files[filedef] : [req.files[filedef]]
       if (fileObj.length < 1) throw "No files provided"
       f = fileObj[0]
-    } else if(req.query.hash){
-      f = {name: req.query.name||"file", size: parseInt(req.header("Content-Length")), md5: req.query.hash, mimetype: req.query.mime || "application/x-binary", data: req}
+    } else if (req.query.hash) {
+      f = { name: req.query.name || "file", size: parseInt(req.header("Content-Length")), md5: req.query.hash, mimetype: req.query.mime || "application/x-binary", data: req }
     }
-    if(!f) throw "No files"
+    if (!f) throw "No files"
 
     let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
 
-    let file = new Entity().tag("wiki-image")
-      .prop("name", f.name)
-      .prop("size", f.size)
-      .prop("hash", f.md5)
-      .prop("mime", f.mimetype)
-      .prop("timestamp", getTimestamp())
-      .setBlob(f.data)
+    let file = Entity.find(`tag:wiki-image prop:"hash=${f.md5}"`)
+
+    if (!file) {
+      file = new Entity().tag("wiki-image")
+        .prop("name", f.name)
+        .prop("size", f.size)
+        .prop("hash", f.md5)
+        .prop("mime", f.mimetype)
+        .prop("timestamp", getTimestamp())
+        .setBlob(f.data)
+    }
 
     wiki.rel(file, "image")
     res.json({ hash: file.hash })
