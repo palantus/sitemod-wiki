@@ -149,7 +149,7 @@ class Element extends HTMLElement {
         showIcons: ["code", "table"]
       });
       inlineAttachment.editors.codemirror4.attach(this.simplemde.codemirror, {
-        uploadUrl: `${apiURL()}/file/upload-single?tags=wiki-image`,
+        uploadUrl: `${apiURL()}/wiki/${this.pageId}/attach-image`,
         extraHeaders: api.getHeaders(),
         jsonFieldName: "hash",
         urlText: "![image](/img/{filename})"
