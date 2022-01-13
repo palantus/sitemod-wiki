@@ -120,13 +120,18 @@ export default (app) => {
   route.post("/:id/attach-image", function (req, res, next) {
     if (!validateAccess(req, res, { role: "team" })) return;
 
-    if (!req.files) throw "No files provided";
-    if (Object.keys(req.files).length < 1) throw "No file sent"
+    let f = null;
+    if (req.files) {
+      if (Object.keys(req.files).length < 1) throw "No file sent"
 
-    let filedef = Object.keys(req.files)[0]
-    let fileObj = Array.isArray(req.files[filedef]) ? req.files[filedef] : [req.files[filedef]]
-    if (fileObj.length < 1) throw "No files provided"
-    let f = fileObj[0]
+      let filedef = Object.keys(req.files)[0]
+      let fileObj = Array.isArray(req.files[filedef]) ? req.files[filedef] : [req.files[filedef]]
+      if (fileObj.length < 1) throw "No files provided"
+      f = fileObj[0]
+    } else if(req.query.hash){
+      f = {name: req.query.name||"file", size: parseInt(req.header("Content-Length")), md5: req.query.hash, mimetype: req.query.mime || "application/x-binary", data: req}
+    }
+    if(!f) throw "No files"
 
     let id = createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
