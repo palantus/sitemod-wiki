@@ -8,13 +8,7 @@ import { getTimestamp } from "../../../../tools/date.mjs"
 import { config } from "../../../../loaders/express.mjs"
 import { service as userService } from "../../../../services/user.mjs"
 import File from "../../../files/models/file.mjs"
-
-export let createId = id => id.replace(/^\s+|\s+$/g, '') // trim
-  .toLowerCase()
-  .replace(/\//g, '-') //Replace / with -
-  .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
-  .replace(/\s+/g, '-') // collapse whitespace and replace by -
-  .replace(/-+/g, '-'); // collapse dashes
+import Page from "../../models/page.mjs"
 
 export let convertBody = md => {
   if (!md) return ""
@@ -37,11 +31,11 @@ export default (app) => {
   app.use("/wiki", route)
 
   route.post("/generate-id", (req, res, next) => {
-    res.json(createId(req.body.id))
+    res.json(Page.createId(req.body.id))
   })
 
   route.get("/exists", (req, res, next) => {
-    let id = createId(req.query.id)
+    let id = Page.createId(req.query.id)
     let wiki = id ? Entity.find(`tag:wiki prop:id=${id}`) : null
     res.json(wiki ? true : false)
   })
@@ -53,7 +47,7 @@ export default (app) => {
   });
 
   route.get('/:id', function (req, res, next) {
-    let id = createId(req.params.id)
+    let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
     let title = wiki?.title || (id == "index" ? "Wiki Index" : idToTitle(id))
     if (wiki) {
@@ -70,7 +64,7 @@ export default (app) => {
 
   route.delete('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { role: "team" })) return;
-    let id = createId(req.params.id)
+    let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
     if (wiki) wiki.delete();
     res.json(true);
@@ -78,7 +72,7 @@ export default (app) => {
 
   route.patch('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { role: "team" })) return;
-    let id = createId(req.params.id)
+    let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
 
     if (req.body.body !== undefined) {
@@ -133,7 +127,7 @@ export default (app) => {
     }
     if(!f) throw "No files"
 
-    let id = createId(req.params.id)
+    let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
 
     let file = new Entity().tag("wiki-image")
