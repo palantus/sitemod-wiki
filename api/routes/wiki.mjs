@@ -143,7 +143,7 @@ export default (app) => {
       .prop("mime", f.mimetype)
       .prop("timestamp", getTimestamp())
       .setBlob(f.data)
-console.log("her")
+
     wiki.rel(file, "image")
     res.json({ hash: file.hash })
   })
