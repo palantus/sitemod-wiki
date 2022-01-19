@@ -35,11 +35,13 @@ export default (app) => {
   })
 
   route.get("/exists", (req, res, next) => {
+    if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.query.id)
     let wiki = id ? Entity.find(`tag:wiki prop:id=${id}`) : null
     res.json(wiki ? true : false)
   })
   route.get('/search', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     if (!req.query.filter) return []
     let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -]/g, '') //Remove invalid chars
     let pages = Entity.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
@@ -47,6 +49,7 @@ export default (app) => {
   });
 
   route.get('/:id', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
     let title = wiki?.title || (id == "index" ? "Wiki Index" : idToTitle(id))
@@ -63,6 +66,7 @@ export default (app) => {
   });
 
   route.delete('/:id', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     if (!validateAccess(req, res, { role: "team" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
@@ -71,7 +75,7 @@ export default (app) => {
   });
 
   route.patch('/:id', function (req, res, next) {
-    if (!validateAccess(req, res, { role: "team" })) return;
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
 
@@ -112,7 +116,7 @@ export default (app) => {
   });
 
   route.post("/:id/attach-image", function (req, res, next) {
-    if (!validateAccess(req, res, { role: "team" })) return;
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
 
     let f = null;
     if (req.files) {
@@ -147,6 +151,7 @@ export default (app) => {
   })
 
   route.get('/image/:id', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let file = Entity.find(`tag:wiki-image prop:"hash=${req.params.id}"`)
     if (!file) throw "Unknown file";
 
