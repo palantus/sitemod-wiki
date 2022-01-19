@@ -67,7 +67,6 @@ export default (app) => {
 
   route.delete('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
-    if (!validateAccess(req, res, { role: "team" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Entity.find(`tag:wiki prop:id=${id}`)
     if (wiki) wiki.delete();
