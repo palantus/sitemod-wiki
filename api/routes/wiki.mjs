@@ -1,7 +1,7 @@
 import express from "express"
 const { Router, Request, Response } = express;
 const route = Router();
-import Entity from "entitystorage";
+import Entity, {sanitize} from "entitystorage";
 import Showdown from "showdown"
 import { validateAccess } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
@@ -151,7 +151,7 @@ export default (app) => {
 
   route.get('/image/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
-    let file = Entity.find(`tag:wiki-image prop:"hash=${req.params.id}"`)
+    let file = Entity.find(`tag:wiki-image prop:"hash=${sanitize(req.params.id)}"`)
     if (!file) throw "Unknown file";
 
     res.setHeader('Content-disposition', `attachment; filename=${file.name}`);
