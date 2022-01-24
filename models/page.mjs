@@ -12,7 +12,7 @@ class Page extends Entity {
 
   static lookup(id) {
     if(!id) return null;
-    return Page.find(`tag:wiki prop:id=${id}`)
+    return Page.find(`tag:wiki prop:"id=${id}"`)
   }
 
   static createId(id){

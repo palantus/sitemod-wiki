@@ -37,7 +37,7 @@ export default (app) => {
   route.get("/exists", (req, res, next) => {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.query.id)
-    let wiki = id ? Entity.find(`tag:wiki prop:id=${id}`) : null
+    let wiki = id ? Entity.find(`tag:wiki prop:id="${id}"`) : null
     res.json(wiki ? true : false)
   })
   route.get('/search', function (req, res, next) {
@@ -68,7 +68,7 @@ export default (app) => {
   route.delete('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:id=${id}`)
+    let wiki = Entity.find(`tag:wiki prop:"id=${id}"`)
     if (wiki) wiki.delete();
     res.json(true);
   });
@@ -76,7 +76,7 @@ export default (app) => {
   route.patch('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
+    let wiki = Entity.find(`tag:wiki prop:"id=${id}"`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
 
     if (req.body.body !== undefined) {
       wiki.body = req.body.body
@@ -131,7 +131,7 @@ export default (app) => {
     if (!f) throw "No files"
 
     let id = Page.createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:id=${id}`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
+    let wiki = Entity.find(`tag:wiki prop:"id=${id}"`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
 
     let file = Entity.find(`tag:wiki-image prop:"hash=${f.md5}"`)
 
