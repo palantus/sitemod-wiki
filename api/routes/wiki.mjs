@@ -5,9 +5,7 @@ import Entity, {sanitize} from "entitystorage";
 import Showdown from "showdown"
 import { validateAccess } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
-import { config } from "../../../../loaders/express.mjs"
 import { service as userService } from "../../../../services/user.mjs"
-import File from "../../../files/models/file.mjs"
 import Page from "../../models/page.mjs"
 
 export let convertBody = md => {
@@ -57,7 +55,7 @@ export default (app) => {
       if (wiki.body && !wiki.html)
         wiki.html = convertBody(wiki.body)
 
-      let html = (wiki.html || "").replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => `${config().apiURL}/wiki/image/${id}?token=${userService.getTempAuthToken(res.locals.user)}`) //Replace image urls
+      let html = (wiki.html || "").replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => `${global.sitecore.apiURL}/wiki/image/${id}?token=${userService.getTempAuthToken(res.locals.user)}`) //Replace image urls
 
       res.json({ id: wiki.id, title, body: wiki.body, html, exists: true, tags: wiki.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5)) });
     } else {
