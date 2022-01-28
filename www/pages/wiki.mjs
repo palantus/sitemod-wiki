@@ -2,7 +2,7 @@ const elementName = 'wiki-page'
 
 import {state, goto, apiURL} from "/system/core.mjs"
 import {on, off} from "/system/events.mjs"
-import {default as api, userRoles} from "/system/api.mjs"
+import {default as api, userPermissions} from "/system/api.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/field-edit.mjs"
@@ -90,8 +90,8 @@ class Element extends HTMLElement {
 
     this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1] || "index"
 
-    userRoles().then(roles => {
-      if(roles.includes("team")){
+    userPermissions().then(permissions => {
+      if(permissions.includes("wiki.edit")){
         this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
         this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
         this.shadowRoot.getElementById("tag-container").classList.remove("hidden")
