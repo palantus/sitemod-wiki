@@ -2,7 +2,8 @@ const elementName = 'wiki-page'
 
 import {state, goto, apiURL} from "/system/core.mjs"
 import {on, off} from "/system/events.mjs"
-import {default as api, userPermissions} from "/system/api.mjs"
+import api from "/system/api.mjs"
+import {userPermissions} from "/system/user.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/field-edit.mjs"
