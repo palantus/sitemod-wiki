@@ -13,7 +13,7 @@ import "/libs/codemirror-4.inline-attachment.js"
 
 import "https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"
 import { promptDialog } from "../../components/dialog.mjs"
-import { confirmDialog } from "../../components/dialog.mjs"
+import { confirmDialog, alertDialog } from "../../components/dialog.mjs"
 //import "/libs/simplemde.js"
 
 const template = document.createElement('template');
@@ -42,7 +42,7 @@ template.innerHTML = `
     
   </style>
 
-  <action-bar>
+  <action-bar id="action-bar" class="hidden">
       <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
       <action-bar-item class="hidden" id="save-btn">Save</action-bar-item>
       <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
@@ -92,6 +92,9 @@ class Element extends HTMLElement {
     this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1] || "index"
 
     userPermissions().then(permissions => {
+      if(permissions.includes("wiki.read")){
+        this.shadowRoot.getElementById("action-bar").classList.remove("hidden")
+      }
       if(permissions.includes("wiki.edit")){
         this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
         this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
@@ -101,7 +104,11 @@ class Element extends HTMLElement {
   }
 
   async refreshData(){
-    this.page = await api.get(`wiki/${this.pageId}`)
+    try{
+      this.page = await api.get(`wiki/${this.pageId}`)
+    } catch(err){
+      alertDialog("You do not have access to this page")
+    }
     if(!this.page) {
       this.shadowRoot.getElementById("tags").setAttribute("patch", ``)
       this.shadowRoot.getElementById("tags").setAttribute("value", "")
@@ -187,13 +194,10 @@ class Element extends HTMLElement {
   }
 
   connectedCallback() {
-    on("changed-project", elementName, this.refreshData)
     on("changed-page", elementName, this.refreshData)
-    this.refreshData();
   }
 
   disconnectedCallback() {
-    off("changed-project", elementName, this.refreshData)
     off("changed-page", elementName, this.refreshData)
   }
 

@@ -2,26 +2,10 @@ import express from "express"
 const { Router, Request, Response } = express;
 const route = Router();
 import Entity, {sanitize} from "entitystorage";
-import Showdown from "showdown"
 import { validateAccess } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
-import { service as userService } from "../../../../services/user.mjs"
 import Page from "../../models/page.mjs"
-
-export let convertBody = md => {
-  if (!md) return ""
-  let bodyConverted = md.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Entity.find(`tag:wiki prop:id=${pageId}`)?.title || idToTitle(pageId)}](/wiki/${pageId})`)
-    .replace(/\[\[(\/[a-zA-Z0-9\-\/\?\&\=]+)\]\]/g, (grp, link) => `[${link.substr(link.lastIndexOf("/") + 1)}](${link})`)
-  let converter = new Showdown.Converter({
-    tables: true,
-    simplifiedAutoLink: true,
-    simpleLineBreaks: true,
-    requireSpaceBeforeHeadingText: true
-  })
-  return converter.makeHtml(bodyConverted);
-}
-
-let idToTitle = id => id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
+import Setup from "../../models/setup.mjs";
 
 export default (app) => {
 
@@ -46,21 +30,25 @@ export default (app) => {
     res.json(pages.map(p => ({ id: p.id, title: p.title })))
   });
 
+  route.get('/setup', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.setup" })) return;
+    res.json(Setup.lookup().toObj());
+  });
+
+  route.patch('/setup', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.setup" })) return;
+    let setup = Setup.lookup();
+
+    if(req.body.enablePublicPages !== undefined) setup.enablePublicPages = !!req.body.enablePublicPages;
+
+    res.json(true);
+  });
+
   route.get('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:id=${id}`)
-    let title = wiki?.title || (id == "index" ? "Wiki Index" : idToTitle(id))
-    if (wiki) {
-      if (wiki.body && !wiki.html)
-        wiki.html = convertBody(wiki.body)
-
-      let html = (wiki.html || "").replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => `${global.sitecore.apiURL}/wiki/image/${id}?token=${userService.getTempAuthToken(res.locals.user)}`) //Replace image urls
-
-      res.json({ id: wiki.id, title, body: wiki.body, html, exists: true, tags: wiki.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5)) });
-    } else {
-      res.json({ id, title, body: "", html: "", exists: false, tags: [] })
-    }
+    let wiki = Page.lookup(id)
+    res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id))
   });
 
   route.delete('/:id', function (req, res, next) {
@@ -78,7 +66,7 @@ export default (app) => {
 
     if (req.body.body !== undefined) {
       wiki.body = req.body.body
-      wiki.html = convertBody(req.body.body)
+      wiki.html = Page.convertBody(req.body.body)
 
       // Update file references:
       let files = [...wiki.html.matchAll(/(\/img\/([\da-zA-Z]+))/g)].map(i => i[2]).map(id => Entity.find(`tag:wiki-image prop:"hash=${id}"`)).filter(f => f != null)
@@ -97,7 +85,7 @@ export default (app) => {
     if (req.body.title !== undefined) wiki.title = req.body.title;
 
     if (wiki.body && !wiki.title) {
-      wiki.title = id == "index" ? "Wiki Index" : idToTitle(id)
+      wiki.title = id == "index" ? "Wiki Index" : Page.idToTitle(id)
     }
     if (req.body.tags) {
       let tags = typeof req.body.tags === "string" ? req.body.tags.split(",").map(t => "user-" + t.trim())
