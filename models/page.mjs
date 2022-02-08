@@ -33,7 +33,7 @@ class Page extends Entity {
 
   static convertBody(md) {
     if (!md) return ""
-    let bodyConverted = md.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Page.lookupUnsafe(pageId)?.title || idToTitle(pageId)}](/wiki/${pageId})`)
+    let bodyConverted = md.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Page.lookupUnsafe(pageId)?.title || Page.idToTitle(pageId)}](/wiki/${pageId})`)
       .replace(/\[\[(\/[a-zA-Z0-9\-\/\?\&\=]+)\]\]/g, (grp, link) => `[${link.substr(link.lastIndexOf("/") + 1)}](${link})`)
     let converter = new Showdown.Converter({
       tables: true,
