@@ -6,6 +6,7 @@ import { validateAccess } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
 import Page from "../../models/page.mjs"
 import Setup from "../../models/setup.mjs";
+import Role from "../../../../models/role.mjs";
 
 export default (app) => {
 
@@ -62,7 +63,9 @@ export default (app) => {
   route.patch('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:"id=${id}"`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
+    let wiki = Page.lookup(id) || new Page(id)
+
+    if(!wiki.validateAccess(res)) return;
 
     if (req.body.body !== undefined) {
       wiki.body = req.body.body
@@ -83,6 +86,15 @@ export default (app) => {
       }
     };
     if (req.body.title !== undefined) wiki.title = req.body.title;
+    if (req.body.access !== undefined && ["public", "shared", "role", "private"].includes(req.body.access)){
+      wiki.access = req.body.access;
+      if(req.body.access == "private"){
+        wiki.rel(res.locals.user, "owner", true)
+      }
+    }
+    if (req.body.role !== undefined){
+      wiki.rel(Role.lookup(req.body.role), "role", true);
+    }
 
     if (wiki.body && !wiki.title) {
       wiki.title = id == "index" ? "Wiki Index" : Page.idToTitle(id)

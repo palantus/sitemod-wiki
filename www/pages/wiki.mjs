@@ -7,6 +7,7 @@ import {userPermissions} from "/system/user.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/field-edit.mjs"
+import "/components/field-list.mjs"
 import "/components/action-bar-menu.mjs"
 
 import "/libs/inline-attachment.js"
@@ -51,10 +52,16 @@ template.innerHTML = `
       
       <action-bar-item id="options-menu" class="hidden">
         <action-bar-menu label="Options">
-          <span id="tag-container">
-            <label for="tags">Tags:</label>
-            <field-edit type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
-          </span>
+          <field-list labels-pct="30">
+            <field-edit label="Tags" type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
+            <field-edit label="Access" type="select" id="access">
+              <option value="public">Public</option>
+              <option value="shared">All users</option>
+              <option value="role">Members of Role</option>
+              <option value="private">Private (only me)</option>
+            </field-edit>
+            <field-edit id="role" label="Role" type="select" id="role" lookup="role"></field-edit>
+          </field-list>
         </action-bar-menu>
       </action-bar-item>
   </action-bar>
@@ -122,7 +129,11 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("title").innerText = this.page.title
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
     this.shadowRoot.getElementById("tags").setAttribute("value", this.page.tags.join(", "))
-    this.shadowRoot.getElementById("tags").setAttribute("patch", `wiki/${this.pageId}`)
+    this.shadowRoot.getElementById("access").setAttribute("value", this.page.access||"")
+    this.shadowRoot.getElementById("role").setAttribute("value", this.page.role||"")
+
+    
+    this.shadowRoot.querySelectorAll("field-edit:not([disabled])").forEach(e => e.setAttribute("patch", `wiki/${this.pageId}`));
   }
 
   editClicked(){

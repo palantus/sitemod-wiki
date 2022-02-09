@@ -1,6 +1,7 @@
 import Entity, {sanitize} from "entitystorage"
 import { getTimestamp } from "../../../tools/date.mjs"
 import { service as userService } from "../../../services/user.mjs"
+import User from "../../../models/user.mjs"
 import Showdown from "showdown"
 
 class Page extends Entity {
@@ -48,6 +49,28 @@ class Page extends Entity {
     return id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
   }
 
+  hasAccess(user){
+    switch(this.access){
+      case "public":
+        return true;
+      case "role":
+        return !this.related.role || !!user?.roles.includes(this.related.role.id)
+      case "private":
+        return user && user._id == this.related.owner?._id
+      case "shared": 
+      default:
+        return !!user
+    }
+  }
+
+  validateAccess(res){
+    if(!this.hasAccess(res.locals.user)){
+      res.status(403).json({ error: `You do not have access to page ${this.id}` })
+      return false;
+    }
+    return true;
+  }
+
   toObj(user){
     let title = this.title || (this.id == "index" ? "Wiki Index" : Page.idToTitle(this.id))
     if (this.body && !this.html)
@@ -55,7 +78,16 @@ class Page extends Entity {
 
     let html = (this.html || "").replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => `${global.sitecore.apiURL}/wiki/image/${id}${user ? `?token=${userService.getTempAuthToken(user)}` : ''}`) //Replace image urls
 
-    return{ id: this.id, title, body: this.body, html, exists: true, tags: this.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5)) }
+    return{ 
+      id: this.id, 
+      title, 
+      body: this.body, 
+      html, 
+      exists: true, 
+      tags: this.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5)),
+      access: this.access || "shared",
+      role: this.related.role?.id || null
+    }
   }
 
   static nullObj(id){
