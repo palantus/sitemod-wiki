@@ -7,6 +7,7 @@ import {userPermissions} from "/system/user.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/field-edit.mjs"
+import "/components/action-bar-menu.mjs"
 
 import "/libs/inline-attachment.js"
 import "/libs/codemirror-4.inline-attachment.js"
@@ -32,7 +33,6 @@ template.innerHTML = `
       background: rgba(255, 255, 255, 0.4);
       opacity: 1;
     }
-    #tag-container{border-left: 1px solid gray; margin-left: 10px; padding-left: 20px;}
     
     #rendered table{border-collapse: collapse;}
     #rendered table th{text-align: left; border-bottom: 1px solid black;}
@@ -49,10 +49,14 @@ template.innerHTML = `
       <action-bar-item id="search-btn">Search</action-bar-item>
       <action-bar-item class="hidden" id="delete-btn">Delete</action-bar-item>
       
-      <span id="tag-container" class="hidden">
-        <label for="tags">Tags:</label>
-        <field-edit type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
-      </span>
+      <action-bar-item id="options-menu" class="hidden">
+        <action-bar-menu label="Options">
+          <span id="tag-container">
+            <label for="tags">Tags:</label>
+            <field-edit type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
+          </span>
+        </action-bar-menu>
+      </action-bar-item>
   </action-bar>
     
   <div id="container">
@@ -98,7 +102,7 @@ class Element extends HTMLElement {
       if(permissions.includes("wiki.edit")){
         this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
         this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
-        this.shadowRoot.getElementById("tag-container").classList.remove("hidden")
+        this.shadowRoot.getElementById("options-menu").classList.remove("hidden")
       }
     })
   }
