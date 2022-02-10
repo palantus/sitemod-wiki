@@ -125,7 +125,7 @@ class Element extends HTMLElement {
     }
 
     if(!this.pageId){
-      this.pageId = isSignedIn() ? "index-shared" : "index-public"
+      this.pageId = isSignedIn() ? "index" : "index-public"
     }
 
     userPermissions().then(permissions => {
