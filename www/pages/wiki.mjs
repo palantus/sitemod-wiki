@@ -1,6 +1,6 @@
 const elementName = 'wiki-page'
 
-import {state, goto, apiURL} from "/system/core.mjs"
+import {state, goto, apiURL, setPageTitle} from "/system/core.mjs"
 import {isSignedIn, user} from "/system/user.mjs"
 import {on, off} from "/system/events.mjs"
 import api from "/system/api.mjs"
@@ -144,6 +144,7 @@ class Element extends HTMLElement {
   }
 
   async refreshData(){
+    setPageTitle('')
     try{
       this.page = await api.get(`wiki/${this.pageId}`)
     } catch(err){
@@ -154,6 +155,8 @@ class Element extends HTMLElement {
       this.shadowRoot.getElementById("tags").setAttribute("value", "")
       return;
     }
+
+    setPageTitle(this.page.title)
 
     this.shadowRoot.getElementById("title").innerText = this.page.title
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
