@@ -3,14 +3,35 @@ import { getTimestamp } from "../../../tools/date.mjs"
 import { service as userService } from "../../../services/user.mjs"
 import User from "../../../models/user.mjs"
 import Showdown from "showdown"
+import MySetup from "./setup-mine.mjs"
 
 class Page extends Entity {
   
-  initNew(id){
-    this.id = Page.createId(id);
+  initNew(id, user){
+    id = Page.createId(id)
+    if(Page.lookup(id))
+      throw "Wiki page already exists"
 
+    this.id = id;
     this.created = getTimestamp()
     this.tag("wiki")
+
+    let mySetup = MySetup.lookup(user)
+    this.access = mySetup.access;
+    this.rel(mySetup.related.role, "role")
+  }
+
+  static createPrivateIndex(id, user){
+    let page = Page.lookup(id)
+    if(!page){
+      page = new Page(id, user)
+      page.access = "private"
+      page.rel(user, "owner")
+      page.body = `Hi ${user.name},\n\nWelcome to your private wiki page!`
+      page.html = Page.convertBody(this.body)
+      page.title = `${user.name} - Private wiki`
+    }
+    return page
   }
 
   static lookup(id) {
@@ -63,12 +84,20 @@ class Page extends Entity {
     }
   }
 
-  validateAccess(res){
-    if(!this.hasAccess(res.locals.user)){
-      res.status(403).json({ error: `You do not have access to page ${this.id}` })
+  validateAccess(res, respondIfFalse = true){
+    if(!this.hasAccess(res.locals.user) && !res.locals.permissions?.includes("admin")){
+      if(respondIfFalse) res.status(403).json({ error: `You do not have access to page "${this.id}"` })
       return false;
     }
     return true;
+  }
+
+  static validateAccessImage(res, hash, respondIfFalse = true){
+    for(let page of Page.search(`tag:wiki image.prop:"hash=${hash}"`)){
+      if(page.validateAccess(res, respondIfFalse))
+        return true;
+    }
+    return false;
   }
 
   toObj(user){
@@ -90,7 +119,9 @@ class Page extends Entity {
     }
   }
 
-  static nullObj(id){
+  static nullObj(id, res){
+    if(res?.locals.user && id == `index-private-${res?.locals.user.id}`)
+      return Page.createPrivateIndex(id, res.locals.user).toObj()
     return { id, title: (id == "index" ? "Wiki Index" : Page.idToTitle(id)), body: "", html: "", exists: false, tags: [] }
   }
 }

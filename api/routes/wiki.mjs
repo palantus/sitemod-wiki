@@ -7,6 +7,7 @@ import { getTimestamp } from "../../../../tools/date.mjs"
 import Page from "../../models/page.mjs"
 import Setup from "../../models/setup.mjs";
 import Role from "../../../../models/role.mjs";
+import MySetup from "../../models/setup-mine.mjs";
 
 export default (app) => {
 
@@ -20,15 +21,33 @@ export default (app) => {
   route.get("/exists", (req, res, next) => {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.query.id)
-    let wiki = id ? Entity.find(`tag:wiki prop:id="${id}"`) : null
+    let wiki = Page.lookup(id)
     res.json(wiki ? true : false)
   })
   route.get('/search', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
-    if (!req.query.filter) return []
+    if (!req.query.filter || typeof req.query.filter !== "string") return []
     let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -]/g, '') //Remove invalid chars
-    let pages = Entity.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
+    let pages = Page.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
+                    .filter(p => p.validateAccess(res, false))
     res.json(pages.map(p => ({ id: p.id, title: p.title })))
+  });
+
+  route.get('/setup/mine', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
+    res.json(MySetup.lookup(res.locals.user).toObj());
+  });
+
+  route.patch('/setup/mine', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
+    let setup = MySetup.lookup(res.locals.user)
+    if (req.body.access !== undefined && ["public", "shared", "role", "private"].includes(req.body.access)){
+      setup.access = req.body.access;
+    }
+    if (req.body.role !== undefined){
+      setup.rel(Role.lookup(sanitize(req.body.role)), "role", true);
+    }
+    res.json(true);
   });
 
   route.get('/setup', function (req, res, next) {
@@ -39,9 +58,7 @@ export default (app) => {
   route.patch('/setup', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.setup" })) return;
     let setup = Setup.lookup();
-
     if(req.body.enablePublicPages !== undefined) setup.enablePublicPages = !!req.body.enablePublicPages;
-
     res.json(true);
   });
 
@@ -49,13 +66,15 @@ export default (app) => {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Page.lookup(id)
-    res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id))
+    if(wiki && !wiki.validateAccess(res)) return;
+    res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id, res))
   });
 
   route.delete('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:"id=${id}"`)
+    let wiki = Page.lookup(id)
+    if(wiki && !wiki.validateAccess(res)) return;
     if (wiki) wiki.delete();
     res.json(true);
   });
@@ -63,8 +82,7 @@ export default (app) => {
   route.patch('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Page.lookup(id) || new Page(id)
-
+    let wiki = Page.lookup(id) || new Page(id, res.locals.user)
     if(!wiki.validateAccess(res)) return;
 
     if (req.body.body !== undefined) {
@@ -93,7 +111,7 @@ export default (app) => {
       }
     }
     if (req.body.role !== undefined){
-      wiki.rel(Role.lookup(req.body.role), "role", true);
+      wiki.rel(Role.lookup(sanitize(req.body.role)), "role", true);
     }
 
     if (wiki.body && !wiki.title) {
@@ -129,7 +147,8 @@ export default (app) => {
     if (!f) throw "No files"
 
     let id = Page.createId(req.params.id)
-    let wiki = Entity.find(`tag:wiki prop:"id=${id}"`) || new Entity().tag("wiki").prop("id", id).prop("created", getTimestamp())
+    let wiki = Page.lookup(id) || new Page(id, res.locals.user)
+    if(!wiki.validateAccess(res)) return;
 
     let file = Entity.find(`tag:wiki-image prop:"hash=${f.md5}"`)
 
@@ -149,8 +168,10 @@ export default (app) => {
 
   route.get('/image/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
-    let file = Entity.find(`tag:wiki-image prop:"hash=${sanitize(req.params.id)}"`)
+    let hash = sanitize(req.params.id)
+    let file = Entity.find(`tag:wiki-image prop:"hash=${hash}"`)
     if (!file) throw "Unknown file";
+    if(!Page.validateAccessImage(res, hash, true)) return;
 
     res.setHeader('Content-disposition', `attachment; filename=${file.name}`);
     res.setHeader('Content-Type', file.mime);

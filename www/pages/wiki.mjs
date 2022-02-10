@@ -1,6 +1,7 @@
 const elementName = 'wiki-page'
 
 import {state, goto, apiURL} from "/system/core.mjs"
+import {isSignedIn, user} from "/system/user.mjs"
 import {on, off} from "/system/events.mjs"
 import api from "/system/api.mjs"
 import {userPermissions} from "/system/user.mjs"
@@ -41,6 +42,12 @@ template.innerHTML = `
     #rendered table td{border-left: 1px solid gray; padding: 5px;}
     #rendered table tbody tr{vertical-align: top; border-bottom: 1px solid gray; border-right: 1px solid gray;}
     
+    #options-menu h4{
+      margin-bottom: 5px;
+    }
+    #options-menu h4:first-child{
+      margin-top: 5px;
+    }
   </style>
 
   <action-bar id="action-bar" class="hidden">
@@ -52,6 +59,7 @@ template.innerHTML = `
       
       <action-bar-item id="options-menu" class="hidden">
         <action-bar-menu label="Options">
+          <h4>This page:</h4>
           <field-list labels-pct="30">
             <field-edit label="Tags" type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
             <field-edit label="Access" type="select" id="access">
@@ -60,7 +68,18 @@ template.innerHTML = `
               <option value="role">Members of Role</option>
               <option value="private">Private (only me)</option>
             </field-edit>
-            <field-edit id="role" label="Role" type="select" id="role" lookup="role"></field-edit>
+            <field-edit id="role" label="Role" type="select" lookup="role"></field-edit>
+          </field-list>
+
+          <h4>My default for new pages:</h4>
+          <field-list labels-pct="30">
+            <field-edit class="my" label="Access" type="select" id="my-access" field="access">
+              <option value="public">Public</option>
+              <option value="shared">All users</option>
+              <option value="role">Members of Role</option>
+              <option value="private">Private (only me)</option>
+            </field-edit>
+            <field-edit class="my" label="Role" type="select" id="my-role" field="role" lookup="role"></field-edit>
           </field-list>
         </action-bar-menu>
       </action-bar-item>
@@ -100,7 +119,14 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("search-btn").addEventListener("click", () => goto("/wiki-search"))
     this.shadowRoot.getElementById("delete-btn").addEventListener("click", this.deletePage)
 
-    this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1] || "index"
+    this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1]
+    if(this.pageId == "index-private" && isSignedIn()){
+      this.pageId = `index-private-${user.id}`
+    }
+
+    if(!this.pageId){
+      this.pageId = isSignedIn() ? "index-shared" : "index-public"
+    }
 
     userPermissions().then(permissions => {
       if(permissions.includes("wiki.read")){
@@ -132,8 +158,14 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("access").setAttribute("value", this.page.access||"")
     this.shadowRoot.getElementById("role").setAttribute("value", this.page.role||"")
 
+    this.shadowRoot.querySelectorAll("field-edit:not([disabled]):not(.my)").forEach(e => e.setAttribute("patch", `wiki/${this.pageId}`));
+
+    api.get("wiki/setup/mine").then(setup => {
+      this.shadowRoot.getElementById("my-access").setAttribute("value", setup.access||"")
+      this.shadowRoot.getElementById("my-role").setAttribute("value", setup.role||"")
+    })
     
-    this.shadowRoot.querySelectorAll("field-edit:not([disabled])").forEach(e => e.setAttribute("patch", `wiki/${this.pageId}`));
+    this.shadowRoot.querySelectorAll("field-edit.my:not([disabled])").forEach(e => e.setAttribute("patch", `wiki/setup/mine`));
   }
 
   editClicked(){

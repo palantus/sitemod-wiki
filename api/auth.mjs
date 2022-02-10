@@ -8,10 +8,11 @@ export default (app) => {
   app.get('/wiki/:id', function (req, res, next) {
     if(!setup.enablePublicPages) return next();
 
-    let wiki = Page.lookup(Page.createId(req.params.id))
-    if(!wiki?.tags.includes("user-public")) return next()
+    let id = Page.createId(req.params.id)
+    let wiki = Page.lookup(id)
+    if(!wiki?.validateAccess(res, false)) return next();
 
-    res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj())
+    res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id, res))
   });
 
   app.get('/wiki/image/:id', function (req, res, next) {
@@ -19,9 +20,7 @@ export default (app) => {
     let hash = sanitize(req.params.id);
     let file = Entity.find(`tag:wiki-image prop:"hash=${hash}"`)
     if (!file) throw "Unknown file";
-
-    let page = Page.search(`tag:wiki tag:user-public image.prop:"hash=${hash}"`)
-    if(!page) return next();
+    if(!Page.validateAccessImage(res, hash, false)) return next();
 
     res.setHeader('Content-disposition', `attachment; filename=${file.name}`);
     res.setHeader('Content-Type', file.mime);

@@ -28,7 +28,7 @@ template.innerHTML = `
   <div id="container">
     <h2>Setup</h2>
     <field-list labels-pct="20">
-      <field-edit type="checkbox" label="Public pages" title="When enabled, all wiki pages with tag 'public' will be viewable without being signed in" id="enablePublicPages"></field-edit>
+      <field-edit type="checkbox" label="Public pages" title="When enabled, a wiki page can be set as public and be viewable when not signed in" id="enablePublicPages"></field-edit>
     </field-list>
   </div>
 `;
