@@ -1,7 +1,7 @@
 import express from "express"
 const { Router, Request, Response } = express;
 const route = Router();
-import Entity, {sanitize} from "entitystorage";
+import Entity, {sanitize, nextNum} from "entitystorage";
 import { validateAccess } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
 import Page from "../../models/page.mjs"
@@ -18,6 +18,16 @@ export default (app) => {
     res.json(Page.createId(req.body.id))
   })
 
+  route.post("/new-private-document", (req, res, next) => {
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
+    let id = `doc-${nextNum("wiki-doc")}`
+    let page = new Page(id, res.locals.user)
+    page.access = "private"
+    page.rel(res.locals.user, "owner")
+    page.tag("user-doc")
+    res.json(page.toObj())
+  })
+
   route.get("/exists", (req, res, next) => {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.query.id)
@@ -27,10 +37,15 @@ export default (app) => {
   route.get('/search', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     if (!req.query.filter || typeof req.query.filter !== "string") return []
-    let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -]/g, '') //Remove invalid chars
-    let pages = Page.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
-                    .filter(p => p.validateAccess(res, false))
-    res.json(pages.map(p => ({ id: p.id, title: p.title })))
+    let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -:]/g, '') //Remove invalid chars
+    let pages;
+    if(filter.startsWith("tag:")){
+      pages = Page.search(`tag:wiki tag:"user-${filter.substring(4)}"`)
+    } else {
+      pages = Page.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
+    }
+    pages = pages.filter(p => p.validateAccess(res, false))
+    res.json(pages.map(p => ({ id: p.id, title: p.title, private: p.access == "private" })))
   });
 
   route.get('/setup/mine', function (req, res, next) {

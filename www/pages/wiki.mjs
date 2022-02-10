@@ -29,7 +29,7 @@ template.innerHTML = `
       padding: 10px;
     }
     .hidden{display: none;}
-    #title{margin-top: 0px;}
+    #title{margin-top: 0px; margin-bottom: 5px;}
     #hint{margin-bottom: 5px;}
     .editor-toolbar{
       background: rgba(255, 255, 255, 0.4);
@@ -51,16 +51,16 @@ template.innerHTML = `
   </style>
 
   <action-bar id="action-bar" class="hidden">
+      <action-bar-item id="search-btn">Search</action-bar-item>
       <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
       <action-bar-item class="hidden" id="save-btn">Save</action-bar-item>
       <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
-      <action-bar-item id="search-btn">Search</action-bar-item>
-      <action-bar-item class="hidden" id="delete-btn">Delete</action-bar-item>
       
       <action-bar-item id="options-menu" class="hidden">
         <action-bar-menu label="Options">
           <h4>This page:</h4>
           <field-list labels-pct="30">
+            <field-edit label="Title" type="text" id="title-edit" field="title"></field-edit>
             <field-edit label="Tags" type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
             <field-edit label="Access" type="select" id="access">
               <option value="public">Public</option>
@@ -70,6 +70,7 @@ template.innerHTML = `
             </field-edit>
             <field-edit id="role" label="Role" type="select" lookup="role"></field-edit>
           </field-list>
+          <button class="hidden" id="delete-btn">Delete page</button>
 
           <h4>My default for new pages:</h4>
           <field-list labels-pct="30">
@@ -89,8 +90,9 @@ template.innerHTML = `
     <h1 id="title" title="Doubleclick to change"></h1>
 
     <div id="editor-container" class="hidden">
-      <div id="hint">Hint: Use [[page]] to link to another wiki page. Use [[/issue/1234]] to link to an issue (or any other AXM page).</div>
       <textarea id="editor"></textarea>
+      <div id="hint">Hint: Use [[page]] to link to another wiki page. Use [[/user/myuser]] to link to a user (or any other page).</div>
+      <hr>
     </div>
     <div id="rendered"></div>
   </div>
@@ -118,6 +120,7 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("rendered").addEventListener("click", this.renderedClick)
     this.shadowRoot.getElementById("search-btn").addEventListener("click", () => goto("/wiki-search"))
     this.shadowRoot.getElementById("delete-btn").addEventListener("click", this.deletePage)
+    this.shadowRoot.getElementById("title-edit").addEventListener("value-changed", this.refreshData)
 
     this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1]
     if(this.pageId == "index-private" && isSignedIn()){
@@ -154,6 +157,7 @@ class Element extends HTMLElement {
 
     this.shadowRoot.getElementById("title").innerText = this.page.title
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
+    this.shadowRoot.getElementById("title-edit").setAttribute("value", this.page.title)
     this.shadowRoot.getElementById("tags").setAttribute("value", this.page.tags.join(", "))
     this.shadowRoot.getElementById("access").setAttribute("value", this.page.access||"")
     this.shadowRoot.getElementById("role").setAttribute("value", this.page.role||"")
