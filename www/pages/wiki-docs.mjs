@@ -1,4 +1,4 @@
-const elementName = 'wiki-search-page'
+const elementName = 'wiki-docs-page'
 
 import {goto} from "/system/core.mjs"
 import api from "/system/api.mjs"
