@@ -121,6 +121,9 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("search-btn").addEventListener("click", () => goto("/wiki-search"))
     this.shadowRoot.getElementById("delete-btn").addEventListener("click", this.deletePage)
     this.shadowRoot.getElementById("title-edit").addEventListener("value-changed", this.refreshData)
+  }
+
+  async refreshData(){
 
     this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1]
     if(this.pageId == "index-private" && isSignedIn()){
@@ -141,9 +144,7 @@ class Element extends HTMLElement {
         this.shadowRoot.getElementById("options-menu").classList.remove("hidden")
       }
     })
-  }
 
-  async refreshData(){
     setPageTitle('')
     try{
       this.page = await api.get(`wiki/${this.pageId}`)
@@ -248,11 +249,15 @@ class Element extends HTMLElement {
   }
 
   connectedCallback() {
+    on("logged-in", elementName, this.refreshData)
+    on("logged-out", elementName, this.refreshData)
     on("changed-page", elementName, this.refreshData)
   }
 
   disconnectedCallback() {
-    off("changed-page", elementName, this.refreshData)
+    off("changed-page", elementName)
+    off("logged-in", elementName)
+    off("logged-out", elementName)
   }
 
 }
