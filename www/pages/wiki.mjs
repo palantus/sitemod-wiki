@@ -15,7 +15,7 @@ import "/components/acl.mjs"
 import "/libs/inline-attachment.js"
 import "/libs/codemirror-4.inline-attachment.js"
 
-import "https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"
+import "https://unpkg.com/easymde/dist/easymde.min.js"
 import { promptDialog } from "../../components/dialog.mjs"
 import { confirmDialog, alertDialog } from "../../components/dialog.mjs"
 //import "/libs/simplemde.js"
@@ -23,7 +23,7 @@ import { confirmDialog, alertDialog } from "../../components/dialog.mjs"
 const template = document.createElement('template');
 template.innerHTML = `
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
   <style>
     #container{
@@ -187,7 +187,7 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("cancel-btn").classList.remove("hidden")
 
     if(!this.simplemde){
-      this.simplemde = new SimpleMDE({
+      this.simplemde = new EasyMDE({
         element: this.shadowRoot.getElementById("editor"),
         spellChecker: false,
         showIcons: ["code", "table"]
