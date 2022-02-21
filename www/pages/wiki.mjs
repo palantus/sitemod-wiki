@@ -10,6 +10,7 @@ import "/components/action-bar-item.mjs"
 import "/components/field-edit.mjs"
 import "/components/field-list.mjs"
 import "/components/action-bar-menu.mjs"
+import "/components/acl.mjs"
 
 import "/libs/inline-attachment.js"
 import "/libs/codemirror-4.inline-attachment.js"
@@ -48,6 +49,7 @@ template.innerHTML = `
     #options-menu h4:first-child{
       margin-top: 5px;
     }
+    field-list{margin-bottom: 5px;}
   </style>
 
   <action-bar id="action-bar" class="hidden">
@@ -62,26 +64,9 @@ template.innerHTML = `
           <field-list labels-pct="30">
             <field-edit label="Title" type="text" id="title-edit" field="title"></field-edit>
             <field-edit label="Tags" type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
-            <field-edit label="Access" type="select" id="access">
-              <option value="public">Public</option>
-              <option value="shared">All users</option>
-              <option value="role">Members of Role</option>
-              <option value="private">Private (only me)</option>
-            </field-edit>
-            <field-edit id="role" label="Role" type="select" lookup="role"></field-edit>
           </field-list>
+          <acl-component id="acl" rights="rw" type="wiki" disabled></acl-component>
           <button class="hidden" id="delete-btn">Delete page</button>
-
-          <h4>My default for new pages:</h4>
-          <field-list labels-pct="30">
-            <field-edit class="my" label="Access" type="select" id="my-access" field="access">
-              <option value="public">Public</option>
-              <option value="shared">All users</option>
-              <option value="role">Members of Role</option>
-              <option value="private">Private (only me)</option>
-            </field-edit>
-            <field-edit class="my" label="Role" type="select" id="my-role" field="role" lookup="role"></field-edit>
-          </field-list>
         </action-bar-menu>
       </action-bar-item>
   </action-bar>
@@ -134,17 +119,6 @@ class Element extends HTMLElement {
       this.pageId = isSignedIn() ? "index" : "index-public"
     }
 
-    userPermissions().then(permissions => {
-      if(permissions.includes("wiki.read")){
-        this.shadowRoot.getElementById("action-bar").classList.remove("hidden")
-      }
-      if(permissions.includes("wiki.edit")){
-        this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
-        this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
-        this.shadowRoot.getElementById("options-menu").classList.remove("hidden")
-      }
-    })
-
     setPageTitle('')
     try{
       this.page = await api.get(`wiki/${this.pageId}`)
@@ -163,17 +137,24 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
     this.shadowRoot.getElementById("title-edit").setAttribute("value", this.page.title)
     this.shadowRoot.getElementById("tags").setAttribute("value", this.page.tags.join(", "))
-    this.shadowRoot.getElementById("access").setAttribute("value", this.page.access||"")
-    this.shadowRoot.getElementById("role").setAttribute("value", this.page.role||"")
 
     this.shadowRoot.querySelectorAll("field-edit:not([disabled]):not(.my)").forEach(e => e.setAttribute("patch", `wiki/${this.pageId}`));
-
-    api.get("wiki/setup/mine").then(setup => {
-      this.shadowRoot.getElementById("my-access").setAttribute("value", setup.access||"")
-      this.shadowRoot.getElementById("my-role").setAttribute("value", setup.role||"")
-    })
     
-    this.shadowRoot.querySelectorAll("field-edit.my:not([disabled])").forEach(e => e.setAttribute("patch", `wiki/setup/mine`));
+    if(this.page.exists && this.page.rights.includes("w")){
+      this.shadowRoot.getElementById("acl").setAttribute("entity-id", this.pageId)
+      setTimeout(() => this.shadowRoot.getElementById("acl").removeAttribute("disabled"), 500)
+    }
+
+    let permissions = await userPermissions()
+
+    if(permissions.includes("wiki.read")){
+      this.shadowRoot.getElementById("action-bar").classList.remove("hidden")
+    }
+    if(permissions.includes("wiki.edit") && this.page.rights.includes("w")){
+      this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
+      this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
+      this.shadowRoot.getElementById("options-menu").classList.remove("hidden")
+    }
   }
 
   editClicked(){

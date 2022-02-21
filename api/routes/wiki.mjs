@@ -22,9 +22,8 @@ export default (app) => {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = `doc-${nextNum("wiki-doc")}`
     let page = new Page(id, res.locals.user)
-    page.access = "private"
-    page.rel(res.locals.user, "owner")
     page.tag("user-doc")
+    page.acl = "r:private;w:private"
     res.json(page.toObj())
   })
 
@@ -44,8 +43,8 @@ export default (app) => {
     } else {
       pages = Page.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
     }
-    pages = pages.filter(p => p.validateAccess(res, false))
-    res.json(pages.map(p => ({ id: p.id, title: p.title, private: p.access == "private" })))
+    pages = pages.filter(p => p.validateAccess(res, 'r', false))
+    res.json(pages.map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private") })))
   });
 
   route.get('/setup/mine', function (req, res, next) {
@@ -56,12 +55,6 @@ export default (app) => {
   route.patch('/setup/mine', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let setup = MySetup.lookup(res.locals.user)
-    if (req.body.access !== undefined && ["public", "shared", "role", "private"].includes(req.body.access)){
-      setup.access = req.body.access;
-    }
-    if (req.body.role !== undefined){
-      setup.rel(Role.lookup(sanitize(req.body.role)), "role", true);
-    }
     res.json(true);
   });
 
@@ -81,7 +74,7 @@ export default (app) => {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Page.lookup(id)
-    if(wiki && !wiki.validateAccess(res)) return;
+    if(wiki && !wiki.validateAccess(res, 'r')) return;
     res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id, res))
   });
 
@@ -89,7 +82,7 @@ export default (app) => {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Page.lookup(id)
-    if(wiki && !wiki.validateAccess(res)) return;
+    if(wiki && !wiki.validateAccess(res, 'w')) return;
     if (wiki) wiki.delete();
     res.json(true);
   });
@@ -98,7 +91,7 @@ export default (app) => {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Page.lookup(id) || new Page(id, res.locals.user)
-    if(!wiki.validateAccess(res)) return;
+    if(!wiki.validateAccess(res, 'w')) return;
 
     if (req.body.body !== undefined) {
       wiki.body = req.body.body
@@ -119,15 +112,6 @@ export default (app) => {
       }
     };
     if (req.body.title !== undefined) wiki.title = req.body.title;
-    if (req.body.access !== undefined && ["public", "shared", "role", "private"].includes(req.body.access)){
-      wiki.access = req.body.access;
-      if(req.body.access == "private"){
-        wiki.rel(res.locals.user, "owner", true)
-      }
-    }
-    if (req.body.role !== undefined){
-      wiki.rel(Role.lookup(sanitize(req.body.role)), "role", true);
-    }
 
     if (wiki.body && !wiki.title) {
       wiki.title = id == "index" ? "Wiki Index" : Page.idToTitle(id)
@@ -141,6 +125,10 @@ export default (app) => {
       wiki.tag(tags, true);
     }
     wiki.prop("modified", getTimestamp())
+
+    if(!wiki.related.owner){
+      wiki.rel(res.locals.user, "owner")
+    }
 
     res.json({ id: wiki.id, title: wiki.title || wiki.id, body: wiki.body, html: wiki.html || "" });
   });
@@ -163,7 +151,7 @@ export default (app) => {
 
     let id = Page.createId(req.params.id)
     let wiki = Page.lookup(id) || new Page(id, res.locals.user)
-    if(!wiki.validateAccess(res)) return;
+    if(!wiki.validateAccess(res, 'w')) return;
 
     let file = Entity.find(`tag:wiki-image prop:"hash=${f.md5}"`)
 

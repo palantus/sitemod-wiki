@@ -1,9 +1,9 @@
 import Entity, {sanitize} from "entitystorage"
 import { getTimestamp } from "../../../tools/date.mjs"
 import { service as userService } from "../../../services/user.mjs"
-import User from "../../../models/user.mjs"
 import Showdown from "showdown"
-import MySetup from "./setup-mine.mjs"
+import ACL from "../../../models/acl.mjs"
+import DataType from "../../../models/datatype.mjs";
 
 class Page extends Entity {
   
@@ -16,20 +16,19 @@ class Page extends Entity {
     this.created = getTimestamp()
     this.tag("wiki")
 
-    let mySetup = MySetup.lookup(user)
-    this.access = mySetup.access;
-    this.rel(mySetup.related.role, "role")
+    this.rel(user, "owner")
+    ACL.setDefaultACLOnEntity(this, user, DataType.lookup("wiki"))
   }
 
   static createPrivateIndex(id, user){
     let page = Page.lookup(id)
     if(!page){
       page = new Page(id, user)
-      page.access = "private"
       page.rel(user, "owner")
       page.body = `Hi ${user.name},\n\nWelcome to your private wiki page!`
       page.html = Page.convertBody(this.body)
       page.title = `${user.name} - Private wiki`
+      page.acl = "r:private;w:private"
     }
     return page
   }
@@ -70,34 +69,25 @@ class Page extends Entity {
     return id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
   }
 
-  hasAccess(user){
-    switch(this.access){
-      case "public":
-        return true;
-      case "role":
-        return !this.related.role || !!user?.roles.includes(this.related.role.id)
-      case "private":
-        return user && user._id == this.related.owner?._id
-      case "shared": 
-      default:
-        return !!user
-    }
+  hasAccess(user, right = 'r'){
+    return new ACL(this, DataType.lookup("wiki")).hasAccess(user, right)
   }
 
-  validateAccess(res, respondIfFalse = true){
-    if(!this.hasAccess(res.locals.user) && !res.locals.permissions?.includes("admin")){
-      if(respondIfFalse) res.status(403).json({ error: `You do not have access to page "${this.id}"` })
-      return false;
-    }
-    return true;
+  validateAccess(res, right, respondIfFalse = true){
+    return new ACL(this, DataType.lookup("wiki")).validateAccess(res, right, respondIfFalse)
   }
 
   static validateAccessImage(res, hash, respondIfFalse = true){
     for(let page of Page.search(`tag:wiki image.prop:"hash=${hash}"`)){
-      if(page.validateAccess(res, respondIfFalse))
+      if(page.validateAccess(res, 'r', respondIfFalse))
         return true;
     }
     return false;
+  }
+
+  rights(user){
+    let acl = new ACL(this, DataType.lookup("wiki"))
+    return "" + (acl.hasAccess(user, "r")?'r':'') + (acl.hasAccess(user, "w")?'w':'')
   }
 
   toObj(user){
@@ -114,8 +104,7 @@ class Page extends Entity {
       html, 
       exists: true, 
       tags: this.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5)),
-      access: this.access || "shared",
-      role: this.related.role?.id || null
+      rights: this.rights(user)
     }
   }
 

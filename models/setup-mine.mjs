@@ -12,8 +12,6 @@ export default class MySetup extends Entity{
 
   toObj(){
     return {
-      access: this.access || "shared",
-      role: this.related.role?.id || null
     }
   }
 }

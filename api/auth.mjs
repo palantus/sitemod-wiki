@@ -10,7 +10,7 @@ export default (app) => {
 
     let id = Page.createId(req.params.id)
     let wiki = Page.lookup(id)
-    if(!wiki?.validateAccess(res, false)) return next();
+    if(!wiki?.validateAccess(res, 'r', false)) return next();
 
     res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id, res))
   });
