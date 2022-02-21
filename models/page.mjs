@@ -111,7 +111,7 @@ class Page extends Entity {
   static nullObj(id, res){
     if(res?.locals.user && id == `index-private-${res?.locals.user.id}`)
       return Page.createPrivateIndex(id, res.locals.user).toObj()
-    return { id, title: (id == "index" ? "Wiki Index" : Page.idToTitle(id)), body: "", html: "", exists: false, tags: [] }
+    return { id, title: (id == "index" ? "Wiki Index" : Page.idToTitle(id)), body: "", html: "", exists: false, tags: [], rights: "rw" }
   }
 }
 
