@@ -116,7 +116,7 @@ export default (app) => {
     if (wiki.body && !wiki.title) {
       wiki.title = id == "index" ? "Wiki Index" : Page.idToTitle(id)
     }
-    if (req.body.tags) {
+    if (req.body.tags !== undefined) {
       let tags = typeof req.body.tags === "string" ? req.body.tags.split(",").map(t => "user-" + t.trim())
         : Array.isArray(req.body.tags)
           ? req.body.tags.map(t => "user-" + t.trim())
