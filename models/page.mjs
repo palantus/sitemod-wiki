@@ -16,7 +16,6 @@ class Page extends Entity {
     this.created = getTimestamp()
     this.tag("wiki")
 
-    this.rel(user, "owner")
     ACL.setDefaultACLOnEntity(this, user, DataType.lookup("wiki"))
   }
 
