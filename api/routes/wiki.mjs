@@ -66,7 +66,6 @@ export default (app) => {
   route.patch('/setup', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.setup" })) return;
     let setup = Setup.lookup();
-    if(req.body.enablePublicPages !== undefined) setup.enablePublicPages = !!req.body.enablePublicPages;
     res.json(true);
   });
 

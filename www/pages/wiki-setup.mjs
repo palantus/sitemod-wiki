@@ -28,8 +28,10 @@ template.innerHTML = `
   <div id="container">
     <h2>Setup</h2>
     <field-list labels-pct="20">
-      <field-edit type="checkbox" label="Public pages" title="When enabled, a wiki page can be set as public and be viewable when not signed in" id="enablePublicPages"></field-edit>
+      
     </field-list>
+
+    <p>Nothing to setup here yet...</p>
   </div>
 `;
 
@@ -47,8 +49,6 @@ class Element extends HTMLElement {
 
   async refreshData(){
     let setup = await api.get("wiki/setup")
-
-    this.shadowRoot.getElementById("enablePublicPages").setAttribute("value", setup.enablePublicPages || false)
 
     this.shadowRoot.querySelectorAll("field-edit:not([disabled])").forEach(e => e.setAttribute("patch", `wiki/setup`));
   }
