@@ -6,8 +6,8 @@ import { validateAccess } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
 import Page from "../../models/page.mjs"
 import Setup from "../../models/setup.mjs";
-import Role from "../../../../models/role.mjs";
 import MySetup from "../../models/setup-mine.mjs";
+import { uuidv4 } from "../../../../www/libs/uuid.mjs"
 
 export default (app) => {
 
@@ -94,15 +94,15 @@ export default (app) => {
 
     if (req.body.body !== undefined) {
       wiki.body = req.body.body
-      wiki.html = Page.convertBody(req.body.body)
+      wiki.convertBody()
 
       // Update file references:
-      let files = [...wiki.html.matchAll(/(\/img\/([\da-zA-Z]+))/g)].map(i => i[2]).map(id => Entity.find(`tag:wiki-image prop:"hash=${id}"`)).filter(f => f != null)
+      let files = [...wiki.html.matchAll(/(\/image\/([\da-zA-Z]+))/g)].map(i => i[2]).map(id => Entity.find(`tag:wiki-image prop:"hash=${id}"`)).filter(f => f != null)
       let ids = files.map(f => f._id)
       for (let r of wiki.rels.image || []) {
         if (!ids.includes(r._id)) {
           wiki.removeRel(r, "image")
-          if (!wiki.related.image)
+          if (!r.relsrev.image)
             r.delete() //Not used by any wiki page anymore
         }
       }
@@ -155,11 +155,13 @@ export default (app) => {
     let file = Entity.find(`tag:wiki-image prop:"hash=${f.md5}"`)
 
     if (!file) {
+      let shareKey = uuidv4();
       file = new Entity().tag("wiki-image")
         .prop("name", f.name)
         .prop("size", f.size)
         .prop("hash", f.md5)
         .prop("mime", f.mimetype)
+        .prop("shareKey", shareKey)
         .prop("timestamp", getTimestamp())
         .setBlob(f.data)
     }
@@ -173,12 +175,19 @@ export default (app) => {
     let hash = sanitize(req.params.id)
     let file = Entity.find(`tag:wiki-image prop:"hash=${hash}"`)
     if (!file) throw "Unknown file";
-    if(!Page.validateAccessImage(res, hash, true)) return;
+    if(file.shareKey && res.locals.shareKey != file.shareKey) return res.status(403).json({ error: `You do not have access to this image` });
 
     res.setHeader('Content-disposition', `attachment; filename=${file.name}`);
     res.setHeader('Content-Type', file.mime);
     res.setHeader('Content-Length', file.size);
 
     file.blob.pipe(res)
+  });
+
+  route.get('/', function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.read" })) return;
+    res.json(Page.all()
+                 .filter(p => p.hasAccess(res.locals.user, 'r', res.locals.shareKey))
+                 .map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private") })))
   });
 };

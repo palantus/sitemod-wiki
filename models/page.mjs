@@ -1,6 +1,5 @@
 import Entity, {sanitize} from "entitystorage"
 import { getTimestamp } from "../../../tools/date.mjs"
-import { service as userService } from "../../../services/user.mjs"
 import Showdown from "showdown"
 import ACL from "../../../models/acl.mjs"
 import DataType from "../../../models/datatype.mjs";
@@ -25,7 +24,7 @@ class Page extends Entity {
       page = new Page(id, user)
       page.rel(user, "owner")
       page.body = `Hi ${user.name},\n\nWelcome to your private wiki page!`
-      page.html = Page.convertBody(this.body)
+      page.convertBody()
       page.title = `${user.name} - Private wiki`
       page.acl = "r:private;w:private"
     }
@@ -51,9 +50,9 @@ class Page extends Entity {
              .replace(/-+/g, '-'); // collapse dashes
   }
 
-  static convertBody(md) {
-    if (!md) return ""
-    let bodyConverted = md.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Page.lookupUnsafe(pageId)?.title || Page.idToTitle(pageId)}](/wiki/${pageId})`)
+  convertBody() {
+    if (!this.body) return ""
+    let bodyConverted = this.body.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Page.lookupUnsafe(pageId)?.title || Page.idToTitle(pageId)}](/wiki/${pageId})`)
       .replace(/\[\[(\/[a-zA-Z0-9\-\/\?\&\=]+)\]\]/g, (grp, link) => `[${link.substr(link.lastIndexOf("/") + 1)}](${link})`)
     let converter = new Showdown.Converter({
       tables: true,
@@ -61,15 +60,20 @@ class Page extends Entity {
       simpleLineBreaks: true,
       requireSpaceBeforeHeadingText: true
     })
-    return converter.makeHtml(bodyConverted);
+    this.html = converter.makeHtml(bodyConverted)
+                         .replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => {
+                            //Replace image urls
+                            let image = Entity.find(`tag:wiki-image prop:"hash=${id}" image..id:${this}`)
+                            return `${global.sitecore.apiURL}/wiki/image/${id}?shareKey=${image?.shareKey || ""}`
+                          });
   }
 
   static idToTitle(id){
     return id.charAt(0).toUpperCase() + id.slice(1).replace(/\-/g, " ")
   }
 
-  hasAccess(user, right = 'r'){
-    return new ACL(this, DataType.lookup("wiki")).hasAccess(user, right)
+  hasAccess(user, right = 'r', shareKey){
+    return new ACL(this, DataType.lookup("wiki")).hasAccess(user, right, shareKey)
   }
 
   validateAccess(res, right, respondIfFalse = true){
@@ -89,18 +93,30 @@ class Page extends Entity {
     return "" + (acl.hasAccess(user, "r")?'r':'') + (acl.hasAccess(user, "w")?'w':'')
   }
 
+  delete(){
+    this.rels.image?.forEach(i => {
+      this.removeRel(i, "image")
+      if(!i.relsrev.image){
+        i.delete();
+      }
+    })
+    super.delete();
+  }
+
+  static all(){
+    return Page.search("tag:wiki")
+  }
+
   toObj(user){
     let title = this.title || (this.id == "index" ? "Wiki Index" : Page.idToTitle(this.id))
     if (this.body && !this.html)
-      this.html = Page.convertBody(this.body)
-
-    let html = (this.html || "").replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => `${global.sitecore.apiURL}/wiki/image/${id}${user ? `?token=${userService.getTempAuthToken(user)}` : ''}`) //Replace image urls
+      this.convertBody()
 
     return{ 
       id: this.id, 
       title, 
       body: this.body, 
-      html, 
+      html : this.html || "", 
       exists: true, 
       tags: this.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5)),
       rights: this.rights(user)
