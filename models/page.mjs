@@ -51,7 +51,7 @@ class Page extends Entity {
   }
 
   convertBody() {
-    if (!this.body) return ""
+    if (!this.body) return this.html = ""
     let bodyConverted = this.body.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Page.lookupUnsafe(pageId)?.title || Page.idToTitle(pageId)}](/wiki/${pageId})`)
       .replace(/\[\[(\/[a-zA-Z0-9\-\/\?\&\=]+)\]\]/g, (grp, link) => `[${link.substr(link.lastIndexOf("/") + 1)}](${link})`)
     let converter = new Showdown.Converter({
@@ -124,7 +124,7 @@ class Page extends Entity {
   }
 
   static nullObj(id, res){
-    if(res?.locals.user && id == `index-private-${res?.locals.user.id}`)
+    if(res?.locals.user && res?.locals.user.id != "guest" && id == `index-private-${res?.locals.user.id}`)
       return Page.createPrivateIndex(id, res.locals.user).toObj()
     return { id, title: (id == "index" ? "Wiki Index" : Page.idToTitle(id)), body: "", html: "", exists: false, tags: [], rights: "rw" }
   }

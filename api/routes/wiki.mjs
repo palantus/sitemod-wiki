@@ -2,7 +2,7 @@ import express from "express"
 const { Router, Request, Response } = express;
 const route = Router();
 import Entity, {sanitize, nextNum} from "entitystorage";
-import { validateAccess } from "../../../../services/auth.mjs"
+import { validateAccess, noGuest } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
 import Page from "../../models/page.mjs"
 import Setup from "../../models/setup.mjs";
@@ -18,7 +18,7 @@ export default (app) => {
     res.json(Page.createId(req.body.id))
   })
 
-  route.post("/new-private-document", (req, res, next) => {
+  route.post("/new-private-document", noGuest, (req, res, next) => {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = `doc-${nextNum("wiki-doc")}`
     let page = new Page(id, res.locals.user)
@@ -52,7 +52,7 @@ export default (app) => {
     res.json(MySetup.lookup(res.locals.user).toObj());
   });
 
-  route.patch('/setup/mine', function (req, res, next) {
+  route.patch('/setup/mine', noGuest, function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let setup = MySetup.lookup(res.locals.user)
     res.json(true);
@@ -63,7 +63,7 @@ export default (app) => {
     res.json(Setup.lookup().toObj());
   });
 
-  route.patch('/setup', function (req, res, next) {
+  route.patch('/setup', noGuest, function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.setup" })) return;
     let setup = Setup.lookup();
     res.json(true);
@@ -77,7 +77,7 @@ export default (app) => {
     res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id, res))
   });
 
-  route.delete('/:id', function (req, res, next) {
+  route.delete('/:id', noGuest, function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
     let wiki = Page.lookup(id)
@@ -89,7 +89,9 @@ export default (app) => {
   route.patch('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Page.lookup(id) || new Page(id, res.locals.user)
+    let wiki = Page.lookup(id);
+    if(!wiki && res.locals.user.id != "guest") wiki = new Page(id, res.locals.user)
+    else if(!wiki) return res.status(403).json({ error: `Only signed in users can create new pages` });
     if(!wiki.validateAccess(res, 'w')) return;
 
     if (req.body.body !== undefined) {
@@ -110,24 +112,26 @@ export default (app) => {
         wiki.rel(f, "image")
       }
     };
-    if (req.body.title !== undefined) wiki.title = req.body.title;
-
     if (wiki.body && !wiki.title) {
       wiki.title = id == "index" ? "Wiki Index" : Page.idToTitle(id)
     }
-    if (req.body.tags !== undefined) {
-      let tags = typeof req.body.tags === "string" ? req.body.tags.split(",").map(t => "user-" + t.trim())
-        : Array.isArray(req.body.tags)
-          ? req.body.tags.map(t => "user-" + t.trim())
-          : wiki.tags
-      tags.push(...wiki.tags.filter(t => !t.startsWith("user-"))) // Include default tags
-      wiki.tag(tags, true);
+    if (req.body.title !== undefined) wiki.title = req.body.title;
+
+    if(res.locals.user.id != "guest"){
+      if (req.body.tags !== undefined) {
+        let tags = typeof req.body.tags === "string" ? req.body.tags.split(",").map(t => "user-" + t.trim())
+          : Array.isArray(req.body.tags)
+            ? req.body.tags.map(t => "user-" + t.trim())
+            : wiki.tags
+        tags.push(...wiki.tags.filter(t => !t.startsWith("user-"))) // Include default tags
+        wiki.tag(tags, true);
+      }
+
+      if(!wiki.related.owner){
+        wiki.rel(res.locals.user, "owner")
+      }
     }
     wiki.prop("modified", getTimestamp())
-
-    if(!wiki.related.owner){
-      wiki.rel(res.locals.user, "owner")
-    }
 
     res.json({ id: wiki.id, title: wiki.title || wiki.id, body: wiki.body, html: wiki.html || "" });
   });
@@ -149,7 +153,9 @@ export default (app) => {
     if (!f) throw "No files"
 
     let id = Page.createId(req.params.id)
-    let wiki = Page.lookup(id) || new Page(id, res.locals.user)
+    let wiki = Page.lookup(id);
+    if(!wiki && res.locals.user.id != "guest") wiki = new Page(id, res.locals.user)
+    else if(!wiki) return res.status(403).json({ error: `Only signed in users can create new pages` });
     if(!wiki.validateAccess(res, 'w')) return;
 
     let file = Entity.find(`tag:wiki-image prop:"hash=${f.md5}"`)
