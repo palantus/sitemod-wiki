@@ -23,7 +23,8 @@ template.innerHTML = `
       border-bottom: 1px solid gray;
     }
 
-    table thead th:nth-child(1){width: 150px}
+    table thead th:nth-child(1){width: 250px}
+    table thead th:nth-child(2){width: 120px}
   </style>
 
   <div id="container">
@@ -32,8 +33,9 @@ template.innerHTML = `
     <table>
         <thead>
             <tr>
-              <th>Id</th>
               <th>Title</th>
+              <th>Tags</th>
+              <th>Private</th>
             </tr>
         </thead>
         <tbody id="results">
@@ -65,8 +67,9 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("results").innerHTML = results.sort((a, b) => a.title?.toLowerCase() < b.title?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
       <tr class="result">
-        <td><field-ref ref="/wiki/${p.id}">${p.id}</field-ref></td>
-        <td>${p.title||""}</td>
+        <td><field-ref ref="/wiki/${p.id}">${p.title}</field-ref></td>
+        <td>${p.tags.join(", ")}</td>
+        <td>${p.private ? "&#10004;" : ""}</td>
       </tr>
     `).join("")
   }

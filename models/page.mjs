@@ -107,6 +107,10 @@ class Page extends Entity {
     return Page.search("tag:wiki")
   }
 
+  get userTags(){
+    return this.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5))
+  }
+
   toObj(user){
     let title = this.title || (this.id == "index" ? "Wiki Index" : Page.idToTitle(this.id))
     if (this.body && !this.html)
@@ -118,7 +122,7 @@ class Page extends Entity {
       body: this.body, 
       html : this.html || "", 
       exists: true, 
-      tags: this.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5)),
+      tags: this.userTags,
       rights: this.rights(user)
     }
   }

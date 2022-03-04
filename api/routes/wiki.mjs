@@ -44,7 +44,7 @@ export default (app) => {
       pages = Page.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
     }
     pages = pages.filter(p => p.validateAccess(res, 'r', false))
-    res.json(pages.map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private") })))
+    res.json(pages.map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private"), tags: p.userTags })))
   });
 
   route.get('/setup/mine', function (req, res, next) {
