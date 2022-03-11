@@ -117,7 +117,7 @@ class Page extends Entity {
   }
 
   storeRevision(){
-    if(!this.body || this.isRevision) return;
+    if(this.body === undefined || this.isRevision) return;
     let revision = duplicate(this).tag("revision")
     this.rel(revision, "revision")
     for(let [rev, e] of Object.entries(revision.rels.revision || {})) 
