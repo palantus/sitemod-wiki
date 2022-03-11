@@ -33,15 +33,16 @@ export default (app) => {
     let wiki = Page.lookup(id)
     res.json(wiki ? true : false)
   })
+
   route.get('/search', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     if (!req.query.filter || typeof req.query.filter !== "string") return []
     let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -:]/g, '') //Remove invalid chars
     let pages;
     if(filter.startsWith("tag:")){
-      pages = Page.search(`tag:wiki tag:"user-${filter.substring(4)}"`)
+      pages = Page.search(`tag:wiki !tag:revision tag:"user-${filter.substring(4)}"`)
     } else {
-      pages = Page.search(`tag:wiki (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
+      pages = Page.search(`tag:wiki !tag:revision (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
     }
     pages = pages.filter(p => p.validateAccess(res, 'r', false))
     res.json(pages.map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private"), tags: p.userTags })))
@@ -72,7 +73,7 @@ export default (app) => {
   route.get('/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.params.id)
-    let wiki = Page.lookup(id)
+    let wiki = Page.lookup(id, req.query.revision)
     if(wiki && !wiki.validateAccess(res, 'r')) return;
     res.json(wiki ? wiki.toObj(res.locals.user) : Page.nullObj(id, res))
   });
@@ -94,7 +95,8 @@ export default (app) => {
     else if(!wiki) return res.status(403).json({ error: `Only signed in users can create new pages` });
     if(!wiki.validateAccess(res, 'w')) return;
 
-    if (req.body.body !== undefined) {
+    if (req.body.body !== undefined && req.body.body != wiki.body) {
+      wiki.storeRevision(); 
       wiki.body = req.body.body
       wiki.convertBody()
 
@@ -174,6 +176,17 @@ export default (app) => {
 
     wiki.rel(file, "image")
     res.json({ hash: file.hash })
+  })
+
+  route.delete("/:id/revisions", function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
+    let id = Page.createId(req.params.id)
+    let wiki = Page.lookup(id);
+    if(!wiki) return res.status(404).json({ error: `Page doesn't exist` });
+    if(!wiki.validateAccess(res, 'w')) return;
+    if(wiki.related.owner?.id != res.locals.user.id && !res.locals.permissions.includes("admin")) return res.status(403).json({ error: `Only page owner can clear page revisions` });
+    wiki.revisions.forEach(r => r.delete())
+    res.json({success: true})
   })
 
   route.get('/image/:id', function (req, res, next) {

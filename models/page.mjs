@@ -1,4 +1,4 @@
-import Entity, {sanitize} from "entitystorage"
+import Entity, {duplicate, sanitize} from "entitystorage"
 import { getTimestamp } from "../../../tools/date.mjs"
 import Showdown from "showdown"
 import ACL from "../../../models/acl.mjs"
@@ -31,9 +31,10 @@ class Page extends Entity {
     return page
   }
 
-  static lookup(id) {
+  static lookup(id, revisionId) {
     if(!id) return null;
-    return Page.find(`tag:wiki prop:"id=${id}"`)
+    return revisionId ? Page.find(`id:${revisionId} tag:wiki tag:revision prop:"id=${id}"`)
+                      : Page.find(`tag:wiki prop:"id=${id}" !tag:revision`)
   }
   static lookupUnsafe(id) {
     if(!id) return null;
@@ -73,15 +74,18 @@ class Page extends Entity {
   }
 
   hasAccess(user, right = 'r', shareKey){
-    return new ACL(this, DataType.lookup("wiki")).hasAccess(user, right, shareKey)
+    return new ACL(this.getPageForAccessValidation(), DataType.lookup("wiki")).hasAccess(user, right, shareKey)
   }
 
   validateAccess(res, right, respondIfFalse = true){
-    return new ACL(this, DataType.lookup("wiki")).validateAccess(res, right, respondIfFalse)
+    return new ACL(this.getPageForAccessValidation(), DataType.lookup("wiki")).validateAccess(res, right, respondIfFalse)
   }
 
   static validateAccessImage(res, hash, respondIfFalse = true){
-    for(let page of Page.search(`tag:wiki image.prop:"hash=${hash}"`)){
+    let idSet = new Set()
+    for(let page of Page.search(`tag:wiki image.prop:"hash=${hash}"`).map(p => p.getPageForAccessValidation())){
+      if(idSet.has(page._id)) continue;
+      idSet.add(page._id)
       if(page.validateAccess(res, 'r', respondIfFalse))
         return true;
     }
@@ -89,8 +93,16 @@ class Page extends Entity {
   }
 
   rights(user){
-    let acl = new ACL(this, DataType.lookup("wiki"))
+    let acl = new ACL(this.getPageForAccessValidation(), DataType.lookup("wiki"))
     return "" + (acl.hasAccess(user, "r")?'r':'') + (acl.hasAccess(user, "w")?'w':'')
+  }
+
+  getPageForAccessValidation(){
+    return this.isRevision ? Page.from(this.relsrev.revision?.[0]) : this;
+  }
+
+  get isRevision(){
+    return this.tags.includes("revision")
   }
 
   delete(){
@@ -100,15 +112,28 @@ class Page extends Entity {
         i.delete();
       }
     })
+    this.rels.revision?.forEach(e => Page.from(e).delete())
     super.delete();
   }
 
+  storeRevision(){
+    if(!this.body || this.isRevision) return;
+    let revision = duplicate(this).tag("revision")
+    this.rel(revision, "revision")
+    for(let [rev, e] of Object.entries(revision.rels.revision || {})) 
+      revision.removeRel(e, rev); // Don't keep revisions of revisions
+  }
+
   static all(){
-    return Page.search("tag:wiki")
+    return Page.search("tag:wiki !tag:revision")
   }
 
   get userTags(){
     return this.tags.filter(t => t.startsWith("user-")).map(t => t.substring(5))
+  }
+
+  get revisions(){
+    return this.rels.revision?.map(r => Page.from(r)) || []
   }
 
   toObj(user){
@@ -116,21 +141,25 @@ class Page extends Entity {
     if (this.body && !this.html)
       this.convertBody()
 
-    return{ 
+    let isRevision = this.isRevision
+    return{
       id: this.id, 
+      revisionId: isRevision ? this._id : null,
       title, 
       body: this.body, 
       html : this.html || "", 
       exists: true, 
       tags: this.userTags,
-      rights: this.rights(user)
+      rights: this.rights(user),
+      modified: this.modified,
+      revisions: isRevision ? [] : (this.rels.revision?.map(r => ({id: r._id, modified: r.modified})) || [])
     }
   }
 
   static nullObj(id, res){
     if(res?.locals.user && res?.locals.user.id != "guest" && id == `index-private-${res?.locals.user.id}`)
       return Page.createPrivateIndex(id, res.locals.user).toObj()
-    return { id, title: (id == "index" ? "Wiki Index" : Page.idToTitle(id)), body: "", html: "", exists: false, tags: [], rights: "rw" }
+    return { id, title: (id == "index" ? "Wiki Index" : Page.idToTitle(id)), body: "", html: "", exists: false, tags: [], rights: "rw", revisions: [], revisionId: null}
   }
 }
 

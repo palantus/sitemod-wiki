@@ -2,7 +2,7 @@ const elementName = 'wiki-page'
 
 import {state, goto, apiURL, setPageTitle} from "/system/core.mjs"
 import {isSignedIn, user} from "/system/user.mjs"
-import {on, off} from "/system/events.mjs"
+import {on, off, fire} from "/system/events.mjs"
 import api from "/system/api.mjs"
 import {userPermissions} from "/system/user.mjs"
 import "/components/action-bar.mjs"
@@ -18,6 +18,7 @@ import "/libs/codemirror-4.inline-attachment.js"
 import "https://unpkg.com/easymde/dist/easymde.min.js"
 import { promptDialog } from "../../components/dialog.mjs"
 import { confirmDialog, alertDialog } from "../../components/dialog.mjs"
+import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
 //import "/libs/simplemde.js"
 
 const template = document.createElement('template');
@@ -30,7 +31,7 @@ template.innerHTML = `
       padding: 10px;
     }
     .hidden{display: none;}
-    #title{margin-top: 0px; margin-bottom: 5px;}
+    #title-container{margin-top: 0px; margin-bottom: 5px;}
     #hint{margin-bottom: 5px;}
     .editor-toolbar{
       background: rgba(255, 255, 255, 0.4);
@@ -50,6 +51,12 @@ template.innerHTML = `
       margin-top: 5px;
     }
     field-list{margin-bottom: 5px;}
+    #revisions{margin-top: 8px; cursor: pointer;}
+    #revision-info{
+      font-size: 50%;
+      color: gray;
+      vertical-align: middle;
+    }
   </style>
 
   <action-bar id="action-bar" class="hidden">
@@ -57,6 +64,7 @@ template.innerHTML = `
       <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
       <action-bar-item class="hidden" id="save-btn">Save</action-bar-item>
       <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
+      <action-bar-item class="hidden" id="back-to-active-btn">Go back to active revision</action-bar-item>
       
       <action-bar-item id="options-menu" class="hidden">
         <action-bar-menu label="Options">
@@ -67,12 +75,13 @@ template.innerHTML = `
           </field-list>
           <acl-component id="acl" rights="rw" type="wiki" disabled></acl-component>
           <button class="hidden" id="delete-btn">Delete page</button>
+          <div tabindex="0" id="revisions"></div>
         </action-bar-menu>
       </action-bar-item>
   </action-bar>
     
   <div id="container">
-    <h1 id="title" title="Doubleclick to change"></h1>
+    <h1 id="title-container"><span id="title" title="Doubleclick to change"></span><span id="revision-info"></span></h1>
 
     <div id="editor-container" class="hidden">
       <textarea id="editor"></textarea>
@@ -97,6 +106,7 @@ class Element extends HTMLElement {
     this.titleClicked = this.titleClicked.bind(this)
     this.renderedClick = this.renderedClick.bind(this)
     this.deletePage = this.deletePage.bind(this)
+    this.showRevisions = this.showRevisions.bind(this)
 
     this.shadowRoot.getElementById("edit-btn").addEventListener("click", this.editClicked)
     this.shadowRoot.getElementById("cancel-btn").addEventListener("click", this.cancelClicked)
@@ -105,7 +115,9 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("rendered").addEventListener("click", this.renderedClick)
     this.shadowRoot.getElementById("search-btn").addEventListener("click", () => goto("/wiki-search"))
     this.shadowRoot.getElementById("delete-btn").addEventListener("click", this.deletePage)
+    this.shadowRoot.getElementById("revisions").addEventListener("click", this.showRevisions)
     this.shadowRoot.getElementById("title-edit").addEventListener("value-changed", this.refreshData)
+    this.shadowRoot.getElementById("back-to-active-btn").addEventListener("click", () => goto(`/wiki/${this.pageId}`))
   }
 
   async refreshData(){
@@ -121,7 +133,7 @@ class Element extends HTMLElement {
 
     setPageTitle('')
     try{
-      this.page = await api.get(`wiki/${this.pageId}`)
+      this.page = await api.get(`wiki/${this.pageId}?revision=${state().query.revision||""}`)
     } catch(err){
       alertDialog("You do not have access to this page")
     }
@@ -137,24 +149,27 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
     this.shadowRoot.getElementById("title-edit").setAttribute("value", this.page.title)
     this.shadowRoot.getElementById("tags").setAttribute("value", this.page.tags.join(", "))
-
-    this.shadowRoot.querySelectorAll("field-edit:not([disabled]):not(.my)").forEach(e => e.setAttribute("patch", `wiki/${this.pageId}`));
+    this.shadowRoot.getElementById("revision-info").innerText = this.page.revisionId ? ` (revision ${this.page.modified?.replace("T", " ").substring(0, 19)||"N/A"})` : ''
+    this.shadowRoot.getElementById("back-to-active-btn").classList.toggle("hidden", !this.page.revisionId)
     
-    if(this.page.exists && this.page.rights.includes("w")){
-      this.shadowRoot.getElementById("acl").setAttribute("entity-id", this.pageId)
-      setTimeout(() => this.shadowRoot.getElementById("acl").removeAttribute("disabled"), 500)
-    }
-
     let permissions = await userPermissions()
+    let edit = permissions.includes("wiki.edit") && this.page.rights.includes("w")
+    let read = permissions.includes("wiki.read")
 
-    if(permissions.includes("wiki.read")){
-      this.shadowRoot.getElementById("action-bar").classList.remove("hidden")
+    if(this.page.revisionId){
+    } else {
+      this.shadowRoot.querySelectorAll("field-edit:not([disabled]):not(.my)").forEach(e => e.setAttribute("patch", `wiki/${this.pageId}`));
+      this.shadowRoot.getElementById("revisions").innerText = `${this.page.revisions.length} previous revision(s)`
+
+      let allowEditACL = this.page.exists && this.page.rights.includes("w")
+      this.shadowRoot.getElementById("acl").setAttribute("entity-id", allowEditACL ? this.pageId : "")
+      setTimeout(() => this.shadowRoot.getElementById("acl").toggleAttribute("disabled", !allowEditACL), 500)
     }
-    if(permissions.includes("wiki.edit") && this.page.rights.includes("w")){
-      this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
-      this.shadowRoot.getElementById("delete-btn").classList.remove("hidden")
-      this.shadowRoot.getElementById("options-menu").classList.remove("hidden")
-    }
+      
+    this.shadowRoot.getElementById("edit-btn").classList.toggle("hidden", !edit || this.page.revisionId)
+    this.shadowRoot.getElementById("delete-btn").classList.toggle("hidden", !edit || this.page.revisionId)
+    this.shadowRoot.getElementById("options-menu").classList.toggle("hidden", !edit || this.page.revisionId)
+    this.shadowRoot.getElementById("action-bar").classList.toggle("hidden", !read)
   }
 
   editClicked(){
@@ -171,6 +186,7 @@ class Element extends HTMLElement {
   async saveClicked(){
     await api.patch(`wiki/${this.pageId}`, {body: this.simplemde.value()})
     this.refreshData();
+    fire("current-wiki-page-updated")
   }
 
   async titleClicked(){
@@ -229,18 +245,23 @@ class Element extends HTMLElement {
     window.history.back();
   }
 
+  showRevisions(){
+    toggleInRightbar("wiki-revisions")
+  }
+
   connectedCallback() {
     on("logged-in", elementName, this.refreshData)
     on("logged-out", elementName, this.refreshData)
     on("changed-page", elementName, this.refreshData)
+    on("changed-page-query", elementName, this.refreshData)
   }
 
   disconnectedCallback() {
     off("changed-page", elementName)
     off("logged-in", elementName)
     off("logged-out", elementName)
+    off("changed-page-query", elementName)
   }
-
 }
 
 window.customElements.define(elementName, Element);
