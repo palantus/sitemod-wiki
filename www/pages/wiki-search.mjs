@@ -52,6 +52,7 @@ class Element extends HTMLElement {
     this.shadowRoot.appendChild(template.content.cloneNode(true));
 
     this.clearAndRefreshData = this.clearAndRefreshData.bind(this);
+    this.queryChanged = this.queryChanged.bind(this);
         
     this.shadowRoot.getElementById('search').addEventListener("change", () => {
       this.queryChanged()
@@ -63,7 +64,7 @@ class Element extends HTMLElement {
   }
 
   async clearAndRefreshData(){
-    let results = await api.get(`wiki/search?filter=${this.lastQuery}`)
+    let results = this.lastQuery ? await api.get(`wiki/search?filter=${this.lastQuery}`) : []
     this.shadowRoot.getElementById("results").innerHTML = results.sort((a, b) => a.title?.toLowerCase() < b.title?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
       <tr class="result">
@@ -74,12 +75,12 @@ class Element extends HTMLElement {
     `).join("")
   }
 
-  async queryChanged(q = this.shadowRoot.querySelector('input').value){
+  queryChanged(q = this.shadowRoot.querySelector('input').value){
     if(q == this.lastQuery) return;
     this.lastQuery = q;
     this.shadowRoot.querySelector('input').value = q;
     //this.shadowRoot.querySelector("table-paging").page = 1
-    await this.clearAndRefreshData();
+    this.clearAndRefreshData();
   }
 
   connectedCallback() {

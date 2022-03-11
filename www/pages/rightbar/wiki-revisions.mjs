@@ -60,7 +60,7 @@ class Element extends HTMLElement {
 
   async refreshData(){
     this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1]
-    if(!this.pageId) toggleInRightbar("wiki-revisions", false);
+    if(!this.pageId) return toggleInRightbar("wiki-revisions", false);
     let page = await api.get(`wiki/${this.pageId}`)
     this.shadowRoot.getElementById("revisions").innerHTML = [{id: "current", modified: page.modified}, ...page.revisions.reverse()].map(r => `
       <div class="rev" id="${r.id}">
