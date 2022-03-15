@@ -78,7 +78,7 @@ class Element extends HTMLElement {
 
   async refreshData(){
     let results = await api.get(`wiki/search?filter=tag:doc`)
-    this.shadowRoot.getElementById("private").innerHTML = results.filter(p => p.private)
+    this.shadowRoot.getElementById("private").innerHTML = results.filter(p => p.mine)
                                                                  .sort((a, b) => (a.title||a.id)?.toLowerCase() < (b.title||b.id)?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
       <tr class="result">
@@ -86,7 +86,7 @@ class Element extends HTMLElement {
       </tr>
     `).join("")
 
-    this.shadowRoot.getElementById("shared").innerHTML = results.filter(p => !p.private)
+    this.shadowRoot.getElementById("shared").innerHTML = results.filter(p => !p.mine)
                                                                  .sort((a, b) => (a.title||a.id)?.toLowerCase() < (b.title||b.id)?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
       <tr class="result">

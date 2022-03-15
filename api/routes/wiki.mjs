@@ -45,7 +45,7 @@ export default (app) => {
       pages = Page.search(`tag:wiki !tag:revision (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
     }
     pages = pages.filter(p => p.validateAccess(res, 'r', false))
-    res.json(pages.map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private"), tags: p.userTags })))
+    res.json(pages.map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private"), tags: p.userTags, mine: p.related.owner?._id == res.locals.user._id })))
   });
 
   route.get('/setup/mine', function (req, res, next) {
@@ -207,6 +207,6 @@ export default (app) => {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     res.json(Page.all()
                  .filter(p => p.hasAccess(res.locals.user, 'r', res.locals.shareKey))
-                 .map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private") })))
+                 .map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private"), mine: p.related.owner?._id == res.locals.user._id  })))
   });
 };

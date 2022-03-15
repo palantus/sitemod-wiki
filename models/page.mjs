@@ -1,4 +1,4 @@
-import Entity, {duplicate, sanitize} from "entitystorage"
+import Entity, {duplicate, sanitize, query} from "entitystorage"
 import { getTimestamp } from "../../../tools/date.mjs"
 import Showdown from "showdown"
 import ACL from "../../../models/acl.mjs"
@@ -33,14 +33,9 @@ class Page extends Entity {
 
   static lookup(id, revisionId) {
     if(!id) return null;
-    return revisionId ? Page.find(`id:${revisionId} tag:wiki tag:revision prop:"id=${id}"`)
-                      : Page.find(`tag:wiki prop:"id=${id}" !tag:revision`)
+    return revisionId ? query.type(Page).id(revisionId).tag("wiki").tag("revision").prop("id", id).first
+                      : query.type(Page).prop("id", id).tag("wiki").not(query.tag("revision")).first
   }
-  static lookupUnsafe(id) {
-    if(!id) return null;
-    return Page.lookup(sanitize(Page.createId(id)))
-  }
-
 
   static createId(id){
     return id.replace(/^\s+|\s+$/g, '') // trim
@@ -53,7 +48,7 @@ class Page extends Entity {
 
   convertBody() {
     if (!this.body) return this.html = ""
-    let bodyConverted = this.body.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Page.lookupUnsafe(pageId)?.title || Page.idToTitle(pageId)}](/wiki/${pageId})`)
+    let bodyConverted = this.body.replace(/\[\[([a-zA-Z0-9\-]+)\]\]/g, (grp, pageId) => `[${Page.lookup(pageId)?.title || Page.idToTitle(pageId)}](/wiki/${pageId})`)
       .replace(/\[\[(\/[a-zA-Z0-9\-\/\?\&\=]+)\]\]/g, (grp, link) => `[${link.substr(link.lastIndexOf("/") + 1)}](${link})`)
     let converter = new Showdown.Converter({
       tables: true,
