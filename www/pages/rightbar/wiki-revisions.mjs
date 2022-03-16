@@ -6,6 +6,7 @@ import {on, off} from "/system/events.mjs"
 import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
 import {goto, state} from "/system/core.mjs"
 import { confirmDialog } from "/components/dialog.mjs"
+import { getPageIdFromPath } from "/pages/wiki.mjs"
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -59,7 +60,7 @@ class Element extends HTMLElement {
   }
 
   async refreshData(){
-    this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1]
+    this.pageId = getPageIdFromPath()
     if(!this.pageId) return toggleInRightbar("wiki-revisions", false);
     let page = await api.get(`wiki/${this.pageId}`)
     this.shadowRoot.getElementById("revisions").innerHTML = [{id: "current", modified: page.modified}, ...page.revisions.reverse()].map(r => `

@@ -121,15 +121,7 @@ class Element extends HTMLElement {
   }
 
   async refreshData(){
-
-    this.pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1]
-    if(this.pageId == "index-private" && isSignedIn()){
-      this.pageId = `index-private-${user.id}`
-    }
-
-    if(!this.pageId){
-      this.pageId = isSignedIn() ? "index" : "index-public"
-    }
+    this.pageId = getPageIdFromPath()
 
     setPageTitle('')
     try{
@@ -266,3 +258,16 @@ class Element extends HTMLElement {
 
 window.customElements.define(elementName, Element);
 export {Element, elementName as name}
+
+export let getPageIdFromPath = () => {
+  let pageId = /\/wiki\/([a-zA-Z]?[a-zA-Z0-9\-]+)/.exec(state().path)?.[1]
+  if(pageId == "index-private" && isSignedIn()){
+    pageId = `index-private-${user.id}`
+  }
+
+  if(!pageId){
+    pageId = isSignedIn() ? "index" : "index-public"
+  }
+
+  return pageId
+}
