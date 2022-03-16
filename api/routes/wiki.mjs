@@ -1,7 +1,7 @@
 import express from "express"
 const { Router, Request, Response } = express;
 const route = Router();
-import Entity, {sanitize, nextNum} from "entitystorage";
+import Entity, {sanitize, nextNum, query} from "entitystorage";
 import { validateAccess, noGuest } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
 import Page from "../../models/page.mjs"
@@ -40,7 +40,7 @@ export default (app) => {
     let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -:]/g, '') //Remove invalid chars
     let pages;
     if(filter.startsWith("tag:")){
-      pages = Page.search(`tag:wiki !tag:revision tag:"user-${filter.substring(4)}"`)
+      pages = query.type(Page).tag("wiki").not(query.tag("revision")).tag(`user-${filter.substring(4)}`).all
     } else {
       pages = Page.search(`tag:wiki !tag:revision (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
     }
@@ -101,7 +101,7 @@ export default (app) => {
       wiki.convertBody()
 
       // Update file references:
-      let files = [...wiki.html.matchAll(/(\/image\/([\da-zA-Z]+))/g)].map(i => i[2]).map(id => Entity.find(`tag:wiki-image prop:"hash=${id}"`)).filter(f => f != null)
+      let files = [...wiki.html.matchAll(/(\/image\/([\da-zA-Z]+))/g)].map(i => i[2]).map(id => query.tag("wiki-image").prop("hash", id).first).filter(f => f != null)
       let ids = files.map(f => f._id)
       for (let r of wiki.rels.image || []) {
         if (!ids.includes(r._id)) {
@@ -160,7 +160,7 @@ export default (app) => {
     else if(!wiki) return res.status(403).json({ error: `Only signed in users can create new pages` });
     if(!wiki.validateAccess(res, 'w')) return;
 
-    let file = Entity.find(`tag:wiki-image prop:"hash=${f.md5}"`)
+    let file = query.tag("wiki-image").prop("hash", f.md5).first
 
     if (!file) {
       let shareKey = uuidv4();
@@ -192,7 +192,7 @@ export default (app) => {
   route.get('/image/:id', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let hash = sanitize(req.params.id)
-    let file = Entity.find(`tag:wiki-image prop:"hash=${hash}"`)
+    let file = query.tag("wiki-image").prop("hash", hash).first
     if (!file) throw "Unknown file";
     if(file.shareKey && res.locals.shareKey != file.shareKey) return res.status(403).json({ error: `You do not have access to this image` });
 

@@ -120,7 +120,7 @@ class Page extends Entity {
   }
 
   static all(){
-    return Page.search("tag:wiki !tag:revision")
+    return query.type(Page).tag("wiki").not(query.tag("revision")).all
   }
 
   get userTags(){
