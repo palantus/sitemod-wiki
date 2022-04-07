@@ -65,7 +65,7 @@ class Element extends HTMLElement {
     let page = await api.get(`wiki/${this.pageId}`)
     this.shadowRoot.getElementById("revisions").innerHTML = [{id: "current", modified: page.modified}, ...page.revisions.reverse()].map(r => `
       <div class="rev" id="${r.id}">
-       ${r.modified.replace("T", " ").substring(0, 19)}${r.id == "current" ? " (active)" : ""}
+       ${r.modified?.replace("T", " ").substring(0, 19) || "N/A"}${r.id == "current" ? " (active)" : ""}
       </div>
     `).join("")
   }
