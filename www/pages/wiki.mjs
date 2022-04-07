@@ -64,8 +64,6 @@ template.innerHTML = `
     <action-bar-item id="new-btn">New</action-bar-item>
     <action-bar-item id="search-btn">Search</action-bar-item>
     <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
-    <action-bar-item class="hidden" id="save-btn">Save</action-bar-item>
-    <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
     <action-bar-item class="hidden" id="back-to-active-btn">Go back to active revision</action-bar-item>
     
     <action-bar-item id="options-menu" class="hidden">
@@ -120,8 +118,8 @@ class Element extends HTMLElement {
 
     this.shadowRoot.getElementById("edit-btn").addEventListener("click", this.editClicked)
     this.shadowRoot.getElementById("new-btn").addEventListener("click", this.newClicked)
-    this.shadowRoot.getElementById("cancel-btn").addEventListener("click", this.cancelClicked)
-    this.shadowRoot.getElementById("save-btn").addEventListener("click", this.saveClicked)
+    //this.shadowRoot.getElementById("cancel-btn").addEventListener("click", this.cancelClicked)
+    //this.shadowRoot.getElementById("save-btn").addEventListener("click", this.saveClicked)
     this.shadowRoot.getElementById("title").addEventListener("dblclick", this.titleClicked)
     this.shadowRoot.getElementById("rendered").addEventListener("click", this.renderedClick)
     this.shadowRoot.getElementById("search-btn").addEventListener("click", () => goto("/wiki-search"))
@@ -211,15 +209,30 @@ class Element extends HTMLElement {
 
   async setEditMode(){
     this.shadowRoot.getElementById("editor-container").classList.remove("hidden")
-    this.shadowRoot.getElementById("edit-btn").classList.add("hidden")
-    this.shadowRoot.getElementById("save-btn").classList.remove("hidden")
-    this.shadowRoot.getElementById("cancel-btn").classList.remove("hidden")
+    //this.shadowRoot.getElementById("edit-btn").classList.add("hidden")
+    //this.shadowRoot.getElementById("save-btn").classList.remove("hidden")
+    //this.shadowRoot.getElementById("cancel-btn").classList.remove("hidden")
 
     if(!this.simplemde){
       this.simplemde = new EasyMDE({
         element: this.shadowRoot.getElementById("editor"),
         spellChecker: false,
-        showIcons: ["code", "table"]
+        //showIcons: ["code", "table"]
+        toolbar: [
+          {
+              name: "save",
+              action: () => this.saveClicked(),
+              className: "fa fa-save",
+              title: "Save",
+          },
+          {
+            name: "close",
+            action: () => this.editClicked(),
+            className: "fa fa-close",
+            title: "Close",
+          },
+          "|", "bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "table", "|", "preview", "side-by-side", "fullscreen"
+        ]
       });
       inlineAttachment.editors.codemirror4.attach(this.simplemde.codemirror, {
         uploadUrl: `${apiURL()}/wiki/${this.pageId}/attach-image`,
@@ -235,9 +248,9 @@ class Element extends HTMLElement {
 
   setViewMode(){
     this.shadowRoot.getElementById("editor-container").classList.add("hidden")
-    this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
-    this.shadowRoot.getElementById("save-btn").classList.add("hidden")
-    this.shadowRoot.getElementById("cancel-btn").classList.add("hidden")
+    //this.shadowRoot.getElementById("edit-btn").classList.remove("hidden")
+    //this.shadowRoot.getElementById("save-btn").classList.add("hidden")
+    //this.shadowRoot.getElementById("cancel-btn").classList.add("hidden")
 
     this.isEditMode = false;
   }
