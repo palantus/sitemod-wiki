@@ -16,8 +16,8 @@ import "/libs/inline-attachment.js"
 import "/libs/codemirror-4.inline-attachment.js"
 
 import "https://unpkg.com/easymde/dist/easymde.min.js"
-import { promptDialog } from "../../components/dialog.mjs"
-import { confirmDialog, alertDialog } from "../../components/dialog.mjs"
+import { promptDialog } from "/components/dialog.mjs"
+import { confirmDialog, alertDialog, showDialog } from "/components/dialog.mjs"
 import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
 //import "/libs/simplemde.js"
 
@@ -57,27 +57,30 @@ template.innerHTML = `
       color: gray;
       vertical-align: middle;
     }
+    acl-component{margin-bottom: 5px; display: block;}
   </style>
 
   <action-bar id="action-bar" class="hidden">
-      <action-bar-item id="search-btn">Search</action-bar-item>
-      <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
-      <action-bar-item class="hidden" id="save-btn">Save</action-bar-item>
-      <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
-      <action-bar-item class="hidden" id="back-to-active-btn">Go back to active revision</action-bar-item>
-      
-      <action-bar-item id="options-menu" class="hidden">
-        <action-bar-menu label="Options">
-          <h4>This page:</h4>
-          <field-list labels-pct="30">
-            <field-edit label="Title" type="text" id="title-edit" field="title"></field-edit>
-            <field-edit label="Tags" type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
-          </field-list>
-          <acl-component id="acl" rights="rw" type="wiki" disabled></acl-component>
-          <button class="hidden" id="delete-btn">Delete page</button>
-          <div tabindex="0" id="revisions"></div>
-        </action-bar-menu>
-      </action-bar-item>
+    <action-bar-item id="new-btn">New</action-bar-item>
+    <action-bar-item id="search-btn">Search</action-bar-item>
+    <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
+    <action-bar-item class="hidden" id="save-btn">Save</action-bar-item>
+    <action-bar-item class="hidden" id="cancel-btn">Close editor</action-bar-item>
+    <action-bar-item class="hidden" id="back-to-active-btn">Go back to active revision</action-bar-item>
+    
+    <action-bar-item id="options-menu" class="hidden">
+      <action-bar-menu label="Options">
+        <h4>This page:</h4>
+        <field-list labels-pct="30">
+          <field-edit label="Title" type="text" id="title-edit" field="title"></field-edit>
+          <field-edit label="Tags" type="text" id="tags" placeholder="tag1, tag2, ..."></field-edit>
+        </field-list>
+        <acl-component id="acl" rights="rw" type="wiki" disabled></acl-component>
+        <button class="hidden" id="delete-btn">Delete page</button>
+        <button id="copy-link-btn">Copy page link</button>
+        <div tabindex="0" id="revisions"></div>
+      </action-bar-menu>
+    </action-bar-item>
   </action-bar>
     
   <div id="container">
@@ -90,6 +93,12 @@ template.innerHTML = `
     </div>
     <div id="rendered"></div>
   </div>
+
+  <dialog-component title="New page" id="new-dialog">
+    <field-component label="Title"><input id="new-title"></input></field-component>
+    <field-component label="Id"><input id="new-id"></input></field-component>
+    <field-component label="Tags"><input id="new-tags" placeholder="tag1, tag2, ..."></input></field-component>
+  </dialog-component>
 `;
 
 class Element extends HTMLElement {
@@ -100,6 +109,7 @@ class Element extends HTMLElement {
     this.shadowRoot.appendChild(template.content.cloneNode(true));
 
     this.refreshData = this.refreshData.bind(this)
+    this.newClicked = this.newClicked.bind(this)
     this.editClicked = this.editClicked.bind(this)
     this.cancelClicked = this.cancelClicked.bind(this)
     this.saveClicked = this.saveClicked.bind(this)
@@ -109,6 +119,7 @@ class Element extends HTMLElement {
     this.showRevisions = this.showRevisions.bind(this)
 
     this.shadowRoot.getElementById("edit-btn").addEventListener("click", this.editClicked)
+    this.shadowRoot.getElementById("new-btn").addEventListener("click", this.newClicked)
     this.shadowRoot.getElementById("cancel-btn").addEventListener("click", this.cancelClicked)
     this.shadowRoot.getElementById("save-btn").addEventListener("click", this.saveClicked)
     this.shadowRoot.getElementById("title").addEventListener("dblclick", this.titleClicked)
@@ -118,6 +129,16 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("revisions").addEventListener("click", this.showRevisions)
     this.shadowRoot.getElementById("title-edit").addEventListener("value-changed", this.refreshData)
     this.shadowRoot.getElementById("back-to-active-btn").addEventListener("click", () => goto(`/wiki/${this.pageId}`))
+    this.shadowRoot.getElementById("new-title").addEventListener("input", e => {
+      if(!e.originalTarget.value) return this.shadowRoot.getElementById("new-id").value = '';
+      clearTimeout(this.slugGenTimer)
+      this.slugGenTimer = setTimeout(() => {
+        api.post("wiki/generate-id", {id: e.originalTarget.value}).then(id => this.shadowRoot.getElementById("new-id").value = id)
+      }, 400)
+    })
+    this.shadowRoot.getElementById("copy-link-btn").addEventListener("click", () => {
+      navigator.clipboard.writeText(`[[${this.pageId}]]`)
+    })
   }
 
   async refreshData(){
@@ -239,6 +260,32 @@ class Element extends HTMLElement {
 
   showRevisions(){
     toggleInRightbar("wiki-revisions")
+  }
+
+  newClicked(){
+    let dialog = this.shadowRoot.querySelector("#new-dialog")
+
+    showDialog(dialog, {
+      show: () => this.shadowRoot.querySelector("#new-title").focus(),
+      ok: async (val) => {
+        let exists = await api.get(`wiki/exists?id=${val.id}`)
+        if(exists) return alertDialog(`The page ${val.id} already exists`)
+        await api.patch(`wiki/${val.id}`, val)
+        goto(`/wiki/${val.id}`)
+      },
+      validate: (val) => 
+          !val.title ? "Please fill out title"
+        : !val.id ? "Please fill out id"
+        : true,
+      values: () => {return {
+        title: this.shadowRoot.getElementById("new-title").value,
+        id: this.shadowRoot.getElementById("new-id").value,
+        tags: [...new Set(this.shadowRoot.getElementById("new-tags").value.split(",").map(t => t.trim()).filter(t => t))]
+      }},
+      close: () => {
+        this.shadowRoot.querySelectorAll("field-component input").forEach(e => e.value = '')
+      }
+    })
   }
 
   connectedCallback() {

@@ -114,10 +114,10 @@ export default (app) => {
         wiki.rel(f, "image")
       }
     };
+    if (req.body.title !== undefined) wiki.title = req.body.title;
     if (wiki.body && !wiki.title) {
       wiki.title = id == "index" ? "Wiki Index" : Page.idToTitle(id)
     }
-    if (req.body.title !== undefined) wiki.title = req.body.title;
 
     if(res.locals.user.id != "guest"){
       if (req.body.tags !== undefined) {
