@@ -15,7 +15,16 @@ export default (app) => {
   app.use("/wiki", route)
 
   route.post("/generate-id", (req, res, next) => {
-    res.json(Page.createId(req.body.id))
+    let originalNewId = Page.createId(req.body.id)
+    if(!originalNewId) throw "Id not provided"
+    let newId = originalNewId
+    if(req.body.ensureNew === true){
+      let i = 1;
+      while(Page.lookup(newId)){
+        newId = `${originalNewId}-${i++}`
+      }
+    }
+    res.json(newId)
   })
 
   route.post("/new-private-document", noGuest, (req, res, next) => {

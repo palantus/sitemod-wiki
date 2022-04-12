@@ -131,7 +131,7 @@ class Element extends HTMLElement {
       if(!e.originalTarget.value) return this.shadowRoot.getElementById("new-id").value = '';
       clearTimeout(this.slugGenTimer)
       this.slugGenTimer = setTimeout(() => {
-        api.post("wiki/generate-id", {id: e.originalTarget.value}).then(id => this.shadowRoot.getElementById("new-id").value = id)
+        api.post("wiki/generate-id", {id: e.originalTarget.value, ensureNew: true}).then(id => this.shadowRoot.getElementById("new-id").value = id)
       }, 400)
     })
     this.shadowRoot.getElementById("copy-link-btn").addEventListener("click", () => {
