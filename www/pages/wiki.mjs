@@ -16,8 +16,7 @@ import "/libs/inline-attachment.js"
 import "/libs/codemirror-4.inline-attachment.js"
 
 import "https://unpkg.com/easymde/dist/easymde.min.js"
-import { promptDialog } from "/components/dialog.mjs"
-import { confirmDialog, alertDialog, showDialog } from "/components/dialog.mjs"
+import { confirmDialog, alertDialog, showDialog, promptDialog } from "/components/dialog.mjs"
 import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
 //import "/libs/simplemde.js"
 

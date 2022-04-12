@@ -54,7 +54,14 @@ export default (app) => {
       pages = Page.search(`tag:wiki !tag:revision (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
     }
     pages = pages.filter(p => p.validateAccess(res, 'r', false))
-    res.json(pages.map(p => ({ id: p.id, title: p.title, private: !!p.acl?.startsWith("r:private"), tags: p.userTags, mine: p.related.owner?._id == res.locals.user._id })))
+    res.json(pages.map(p => ({
+      id: p.id, 
+      title: p.title, 
+      private: !!p.acl?.startsWith("r:private"), 
+      tags: p.userTags, 
+      mine: p.related.owner?._id == res.locals.user._id,
+      modified: p.modified
+    })))
   });
 
   route.get('/setup/mine', function (req, res, next) {
@@ -138,6 +145,12 @@ export default (app) => {
         wiki.tag(tags, true);
       }
 
+      switch(req.body.access){
+        case "public": wiki.acl = "r:public;w:private"; break;
+        case "shared": wiki.acl = "r:shared;w:private"; break;
+        case "private": wiki.acl = "r:private;w:private"; break;
+      }
+
       if(!wiki.related.owner){
         wiki.rel(res.locals.user, "owner")
       }
@@ -146,6 +159,30 @@ export default (app) => {
 
     res.json({ id: wiki.id, title: wiki.title || wiki.id, body: wiki.body, html: wiki.html || "" });
   });
+
+  route.post('/:id/tags/:tag', noGuest, function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
+    let id = Page.createId(req.params.id)
+    let wiki = Page.lookup(id);
+    if(!wiki) throw "Unknown page"
+    if(!wiki.validateAccess(res, 'w')) return;
+    let tag = sanitize(req.params.tag)
+    if(!tag) throw "invalid tag"
+    wiki.tag(`user-${tag}`)
+    res.json({success: true})
+  })
+
+  route.delete('/:id/tags/:tag', noGuest, function (req, res, next) {
+    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
+    let id = Page.createId(req.params.id)
+    let wiki = Page.lookup(id);
+    if(!wiki) throw "Unknown page"
+    if(!wiki.validateAccess(res, 'w')) return;
+    let tag = sanitize(req.params.tag)
+    if(!tag) throw "invalid tag"
+    wiki.removeTag(`user-${tag}`)
+    res.json({success: true})
+  })
 
   route.post("/:id/attach-image", function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
