@@ -109,6 +109,7 @@ export default (app) => {
     let wiki = Page.lookup(id);
     if(!wiki && res.locals.user.id != "guest") wiki = new Page(id, res.locals.user)
     else if(!wiki) return res.status(403).json({ error: `Only signed in users can create new pages` });
+    if(!wiki && !validateAccess(req, res, { permission: "wiki.create" })) return;
     if(!wiki.validateAccess(res, 'w')) return;
 
     if (req.body.body !== undefined && req.body.body != wiki.body) {

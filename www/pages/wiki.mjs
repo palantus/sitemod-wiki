@@ -60,7 +60,7 @@ template.innerHTML = `
   </style>
 
   <action-bar id="action-bar" class="hidden">
-    <action-bar-item id="new-btn">New</action-bar-item>
+    <action-bar-item class="hidden" id="new-btn">New</action-bar-item>
     <action-bar-item id="search-btn">Search</action-bar-item>
     <action-bar-item class="hidden" id="edit-btn">Edit</action-bar-item>
     <action-bar-item class="hidden" id="back-to-active-btn">Go back to active revision</action-bar-item>
@@ -176,6 +176,7 @@ class Element extends HTMLElement {
       setTimeout(() => this.shadowRoot.getElementById("acl").toggleAttribute("disabled", !allowEditACL), 500)
     }
       
+    this.shadowRoot.getElementById("new-btn").classList.toggle("hidden", !permissions.includes("wiki.create"))
     this.shadowRoot.getElementById("edit-btn").classList.toggle("hidden", !edit || this.page.revisionId)
     this.shadowRoot.getElementById("delete-btn").classList.toggle("hidden", !edit || this.page.revisionId)
     this.shadowRoot.getElementById("options-menu").classList.toggle("hidden", !edit || this.page.revisionId)
