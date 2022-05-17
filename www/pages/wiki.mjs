@@ -127,10 +127,11 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("title-edit").addEventListener("value-changed", this.refreshData)
     this.shadowRoot.getElementById("back-to-active-btn").addEventListener("click", () => goto(`/wiki/${this.pageId}`))
     this.shadowRoot.getElementById("new-title").addEventListener("input", e => {
-      if(!e.originalTarget.value) return this.shadowRoot.getElementById("new-id").value = '';
+      let value = (e.originalTarget||e.target)?.value
+      if(!value) return this.shadowRoot.getElementById("new-id").value = '';
       clearTimeout(this.slugGenTimer)
       this.slugGenTimer = setTimeout(() => {
-        api.post("wiki/generate-id", {id: e.originalTarget.value, ensureNew: true}).then(id => this.shadowRoot.getElementById("new-id").value = id)
+        api.post("wiki/generate-id", {id: value, ensureNew: true}).then(id => this.shadowRoot.getElementById("new-id").value = id)
       }, 400)
     })
     this.shadowRoot.getElementById("copy-link-btn").addEventListener("click", () => {
