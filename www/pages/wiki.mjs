@@ -22,6 +22,7 @@ import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
 const template = document.createElement('template');
 template.innerHTML = `
 
+  <link rel="stylesheet" href="/css/global.css">
   <link rel="stylesheet" href="/libs/easymde.min.css">
   <link rel="stylesheet" href="/libs/font-awesome.min.css">
   <style>
@@ -37,7 +38,7 @@ template.innerHTML = `
     }
     
     #rendered table{border-collapse: collapse;}
-    #rendered table th{text-align: left; border-bottom: 1px solid black;}
+    #rendered table th{text-align: left; border: 1px solid var(--contrast-color-muted); padding: 5px;}
     #rendered table th, #rendered table td{padding-right: 5px;}
     #rendered table td{border-left: 1px solid gray; padding: 5px;}
     #rendered table tbody tr{vertical-align: top; border-bottom: 1px solid gray; border-right: 1px solid gray;}
