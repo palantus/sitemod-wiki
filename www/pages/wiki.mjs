@@ -15,16 +15,15 @@ import "/components/acl.mjs"
 import "/libs/inline-attachment.js"
 import "/libs/codemirror-4.inline-attachment.js"
 
-import "https://unpkg.com/easymde/dist/easymde.min.js"
+import "/libs/easymde.min.js"
 import { confirmDialog, alertDialog, showDialog, promptDialog } from "/components/dialog.mjs"
 import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
-//import "/libs/simplemde.js"
 
 const template = document.createElement('template');
 template.innerHTML = `
 
-  <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/libs/easymde.min.css">
+  <link rel="stylesheet" href="/libs/font-awesome.min.css">
   <style>
     #container{
       padding: 10px;
