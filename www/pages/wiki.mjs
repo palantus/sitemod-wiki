@@ -315,6 +315,9 @@ class Element extends HTMLElement {
     on("logged-out", elementName, this.refreshData)
     on("changed-page", elementName, this.refreshData)
     on("changed-page-query", elementName, this.refreshData)
+
+    // Ask users if they really want to close the window/tab
+    window.onbeforeunload = () => this.isEditMode && this.simplemde.value() != this.page.body ? "You have unsaved changes" : null
   }
 
   disconnectedCallback() {
@@ -322,6 +325,8 @@ class Element extends HTMLElement {
     off("logged-in", elementName)
     off("logged-out", elementName)
     off("changed-page-query", elementName)
+
+    window.onbeforeunload = null;
   }
 }
 
