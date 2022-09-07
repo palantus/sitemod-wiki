@@ -186,10 +186,17 @@ class Element extends HTMLElement {
   }
 
   editClicked(){
-    if(this.isEditMode)
-      this.setViewMode();
-    else
+    if(this.isEditMode){
+      if(this.simplemde.value() != this.page.body){
+        confirmDialog("You have unsaved changes. Are you sure that you want to discard them?").then(answer => {
+          if(answer) this.setViewMode()
+        })
+      } else {
+        this.setViewMode();
+      }
+    } else {
       this.setEditMode();
+    }
   }
 
   cancelClicked(){
