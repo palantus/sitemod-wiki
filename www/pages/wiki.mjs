@@ -141,9 +141,9 @@ class Element extends HTMLElement {
   }
 
   async refreshData(){
-    this.pageId = getPageIdFromPath()
+    this.pageId = this.hasAttribute("page-id") ? this.getAttribute("page-id") : getPageIdFromPath()
 
-    setPageTitle('')
+    if(!this.hasAttribute("page-id")) setPageTitle('')
     try{
       this.page = await api.get(`wiki/${this.pageId}?revision=${state().query.revision||""}`)
     } catch(err){
@@ -155,7 +155,7 @@ class Element extends HTMLElement {
       return;
     }
 
-    setPageTitle(this.page.title)
+    if(!this.hasAttribute("page-id")) setPageTitle(this.page.title)
 
     this.shadowRoot.getElementById("title").innerText = this.page.title
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
@@ -311,6 +311,7 @@ class Element extends HTMLElement {
   }
 
   connectedCallback() {
+    if(this.hasAttribute("page-id")) this.refreshData();
     on("logged-in", elementName, this.refreshData)
     on("logged-out", elementName, this.refreshData)
     on("changed-page", elementName, this.refreshData)
