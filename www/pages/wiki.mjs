@@ -311,14 +311,16 @@ class Element extends HTMLElement {
   }
 
   connectedCallback() {
-    if(this.hasAttribute("page-id")) this.refreshData();
+    if(this.isEmbedded()) this.refreshData();
     on("logged-in", elementName, this.refreshData)
     on("logged-out", elementName, this.refreshData)
     on("changed-page", elementName, this.refreshData)
     on("changed-page-query", elementName, this.refreshData)
 
-    // Ask users if they really want to close the window/tab
-    window.onbeforeunload = () => this.isEditMode && this.simplemde.value() != this.page.body ? "You have unsaved changes" : null
+    if(!this.isEmbedded()) {
+      // Ask users if they really want to close the window/tab
+      window.onbeforeunload = () => this.isEditMode && this.simplemde.value() != this.page.body ? "You have unsaved changes" : null
+    }
   }
 
   disconnectedCallback() {
@@ -327,7 +329,13 @@ class Element extends HTMLElement {
     off("logged-out", elementName)
     off("changed-page-query", elementName)
 
-    window.onbeforeunload = null;
+    if(!this.isEmbedded()) {
+      window.onbeforeunload = null;
+    }
+  }
+
+  isEmbedded(){
+    return this.hasAttribute("page-id");
   }
 }
 
