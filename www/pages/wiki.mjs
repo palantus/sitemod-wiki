@@ -86,8 +86,6 @@ template.innerHTML = `
 
     <div id="editor-container" class="hidden">
       <textarea id="editor"></textarea>
-      <div id="hint">Hint: Use [[page]] to link to another wiki page. Use [[/user/myuser]] to link to a user (or any other page).</div>
-      <hr>
     </div>
     <div id="rendered"></div>
   </div>
@@ -115,6 +113,7 @@ class Element extends HTMLElement {
     this.renderedClick = this.renderedClick.bind(this)
     this.deletePage = this.deletePage.bind(this)
     this.showRevisions = this.showRevisions.bind(this)
+    this.helpClicked = this.helpClicked.bind(this)
 
     this.shadowRoot.getElementById("edit-btn").addEventListener("click", this.editClicked)
     this.shadowRoot.getElementById("new-btn").addEventListener("click", this.newClicked)
@@ -240,7 +239,13 @@ class Element extends HTMLElement {
             className: "fa fa-close",
             title: "Close",
           },
-          "|", "bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "table", "|", "preview", "side-by-side", "fullscreen"
+          "|", "bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "table", "|", "preview", "side-by-side", "fullscreen", "|",
+          {
+            name: "help",
+            action: () => this.helpClicked(),
+            className: "fa fa-question",
+            title: "Help",
+          },
         ]
       });
       inlineAttachment.editors.codemirror4.attach(this.simplemde.codemirror, {
@@ -308,6 +313,13 @@ class Element extends HTMLElement {
         this.shadowRoot.querySelectorAll("field-component input").forEach(e => e.value = '')
       }
     })
+  }
+
+  helpClicked(){
+    alertDialog(`
+      <p>TBD.</p>
+      <p>Hint: Use [[page]] to link to another wiki page. Use [[/user/myuser]] to link to a user (or any other page).</p>
+    `, {title: "Help"})
   }
 
   connectedCallback() {
