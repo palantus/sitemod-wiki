@@ -43,6 +43,7 @@ template.innerHTML = `
     #rendered table td{border-left: 1px solid gray; padding: 5px;}
     #rendered table tbody tr{vertical-align: top; border-bottom: 1px solid gray; border-right: 1px solid gray;}
     #rendered a{color: inherit !important;}
+    #rendered pre {border-left: 4px solid var(--accent-back); padding-left: 10px;}
 
     #options-menu h4{
       margin-bottom: 5px;
