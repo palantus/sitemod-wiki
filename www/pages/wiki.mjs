@@ -42,7 +42,8 @@ template.innerHTML = `
     #rendered table th, #rendered table td{padding-right: 5px;}
     #rendered table td{border-left: 1px solid gray; padding: 5px;}
     #rendered table tbody tr{vertical-align: top; border-bottom: 1px solid gray; border-right: 1px solid gray;}
-    #rendered a{color: inherit !important;}
+    #rendered a{color: var(--link) !important; text-decoration: none;}
+    #rendered a:hover{color: var(--link-hover) !important;}
     #rendered pre {border-left: 4px solid var(--accent-back); padding-left: 10px;}
 
     #options-menu h4{
