@@ -165,7 +165,7 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("back-to-active-btn").classList.toggle("hidden", !this.page.revisionId)
     
     let permissions = await userPermissions()
-    let edit = permissions.includes("wiki.edit") && this.page.rights.includes("w")
+    let edit = permissions.includes("wiki.edit") && (this.page.rights.includes("w") || permissions.includes("admin"))
     let read = permissions.includes("wiki.read")
 
     if(this.page.revisionId){
