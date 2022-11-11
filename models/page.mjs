@@ -117,7 +117,7 @@ class Page extends Entity {
     if(this.body === undefined || this.isRevision) return;
     let revision = duplicate(this).tag("revision")
     this.rel(revision, "revision")
-    this.rel(author, "author")
+    this.rel(author, "author", true)
     for(let [rev, e] of Object.entries(revision.rels.revision || {})) 
       revision.removeRel(e, rev); // Don't keep revisions of revisions
   }
