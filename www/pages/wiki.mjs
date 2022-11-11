@@ -156,7 +156,7 @@ class Element extends HTMLElement {
     if(!this.hasAttribute("page-id")) setPageTitle(this.page.title)
 
     this.shadowRoot.getElementById("title").innerText = this.page.title
-    this.shadowRoot.getElementById("title").setAttribute("title", `Last edit by ${this.page.author.name} at ${this.page.modified?.replace("T", " ").substring(0, 19)}`)
+    this.shadowRoot.getElementById("title").setAttribute("title", `Last edit by ${this.page.author?.name||"N/A"} at ${this.page.modified?.replace("T", " ").substring(0, 19)}`)
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
     this.shadowRoot.getElementById("title-edit").setAttribute("value", this.page.title)
     this.shadowRoot.getElementById("tags").setAttribute("value", this.page.tags.join(", "))
