@@ -13,6 +13,7 @@ class Page extends Entity {
 
     this.id = id;
     this.created = getTimestamp()
+    this.rel(user, "author")
     this.tag("wiki")
 
     ACL.setDefaultACLOnEntity(this, user, DataType.lookup("wiki"))
@@ -112,10 +113,11 @@ class Page extends Entity {
     super.delete();
   }
 
-  storeRevision(){
+  storeRevision(author){
     if(this.body === undefined || this.isRevision) return;
     let revision = duplicate(this).tag("revision")
     this.rel(revision, "revision")
+    this.rel(author, "author")
     for(let [rev, e] of Object.entries(revision.rels.revision || {})) 
       revision.removeRel(e, rev); // Don't keep revisions of revisions
   }
@@ -138,6 +140,7 @@ class Page extends Entity {
       this.convertBody()
 
     let isRevision = this.isRevision
+    let author = this.related.author
     return{
       id: this.id, 
       revisionId: isRevision ? this._id : null,
@@ -148,7 +151,15 @@ class Page extends Entity {
       tags: this.userTags,
       rights: this.rights(user),
       modified: this.modified,
-      revisions: isRevision ? [] : (this.rels.revision?.map(r => ({id: r._id, modified: r.modified})) || [])
+      revisions: isRevision ? [] : (this.rels.revision?.map(r => {
+        let author = r.related.author
+        return {
+          id: r._id, 
+          modified: r.modified, 
+          author: author ? {id: author.id, name: author.name} : null
+        }
+      })) || [],
+      author: author ? {id: author.id, name: author.name} : null
     }
   }
 

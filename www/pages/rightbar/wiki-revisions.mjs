@@ -63,8 +63,8 @@ class Element extends HTMLElement {
     this.pageId = getPageIdFromPath()
     if(!this.pageId) return toggleInRightbar("wiki-revisions", false);
     let page = await api.get(`wiki/${this.pageId}`)
-    this.shadowRoot.getElementById("revisions").innerHTML = [{id: "current", modified: page.modified}, ...page.revisions.reverse()].map(r => `
-      <div class="rev" id="${r.id}">
+    this.shadowRoot.getElementById("revisions").innerHTML = [{id: "current", modified: page.modified, author: page.author}, ...page.revisions.reverse()].map(r => `
+      <div class="rev" id="${r.id}" title="${r.author ? `${r.author.name} (${r.author.id})` : "Unknown author"}">
        ${r.modified?.replace("T", " ").substring(0, 19) || "N/A"}${r.id == "current" ? " (active)" : ""}
       </div>
     `).join("")

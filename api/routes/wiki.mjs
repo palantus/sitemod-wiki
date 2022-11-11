@@ -113,7 +113,7 @@ export default (app) => {
     if(!wiki.validateAccess(res, 'w')) return;
 
     if (req.body.body !== undefined && req.body.body != wiki.body) {
-      wiki.storeRevision(); 
+      wiki.storeRevision(res.locals.user); 
       wiki.body = req.body.body
       wiki.convertBody()
 
