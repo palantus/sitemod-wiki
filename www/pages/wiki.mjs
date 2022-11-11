@@ -83,7 +83,7 @@ template.innerHTML = `
   </action-bar>
     
   <div id="container">
-    <h1 id="title-container"><span id="title" title="Doubleclick to change"></span><span id="revision-info"></span></h1>
+    <h1 id="title-container"><span id="title"></span><span id="revision-info"></span></h1>
 
     <div id="editor-container" class="hidden">
       <textarea id="editor"></textarea>
@@ -110,7 +110,6 @@ class Element extends HTMLElement {
     this.editClicked = this.editClicked.bind(this)
     this.cancelClicked = this.cancelClicked.bind(this)
     this.saveClicked = this.saveClicked.bind(this)
-    this.titleClicked = this.titleClicked.bind(this)
     this.renderedClick = this.renderedClick.bind(this)
     this.deletePage = this.deletePage.bind(this)
     this.showRevisions = this.showRevisions.bind(this)
@@ -120,7 +119,6 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("new-btn").addEventListener("click", this.newClicked)
     //this.shadowRoot.getElementById("cancel-btn").addEventListener("click", this.cancelClicked)
     //this.shadowRoot.getElementById("save-btn").addEventListener("click", this.saveClicked)
-    this.shadowRoot.getElementById("title").addEventListener("dblclick", this.titleClicked)
     this.shadowRoot.getElementById("rendered").addEventListener("click", this.renderedClick)
     this.shadowRoot.getElementById("search-btn").addEventListener("click", () => goto("/wiki-search"))
     this.shadowRoot.getElementById("delete-btn").addEventListener("click", this.deletePage)
@@ -158,6 +156,7 @@ class Element extends HTMLElement {
     if(!this.hasAttribute("page-id")) setPageTitle(this.page.title)
 
     this.shadowRoot.getElementById("title").innerText = this.page.title
+    this.shadowRoot.getElementById("title").setAttribute("title", `Last edit by ${this.page.author.name} at ${this.page.modified?.replace("T", " ").substring(0, 19)}`)
     this.shadowRoot.getElementById("rendered").innerHTML = this.page.html||""
     this.shadowRoot.getElementById("title-edit").setAttribute("value", this.page.title)
     this.shadowRoot.getElementById("tags").setAttribute("value", this.page.tags.join(", "))
@@ -207,13 +206,6 @@ class Element extends HTMLElement {
     await api.patch(`wiki/${this.pageId}`, {body: this.simplemde.value()})
     this.refreshData();
     fire("current-wiki-page-updated")
-  }
-
-  async titleClicked(){
-    let newTitle = await promptDialog("Enter new title", this.page.title)
-    if(!newTitle) return;
-    await api.patch(`wiki/${this.pageId}`, {title: newTitle})
-    this.refreshData();
   }
 
   async setEditMode(){
