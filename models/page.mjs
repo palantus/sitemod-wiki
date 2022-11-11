@@ -88,6 +88,7 @@ class Page extends Entity {
   }
 
   rights(user){
+    if(user.permissions.includes("admin")) return 'rw'
     let acl = new ACL(this.getPageForAccessValidation(), DataType.lookup("wiki"))
     return "" + (acl.hasAccess(user, "r")?'r':'') + (acl.hasAccess(user, "w")?'w':'')
   }
