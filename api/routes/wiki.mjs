@@ -2,6 +2,7 @@ import express from "express"
 const { Router, Request, Response } = express;
 const route = Router();
 import Entity, {sanitize, nextNum, query} from "entitystorage";
+import contentDisposition from 'content-disposition'
 import { validateAccess, noGuest } from "../../../../services/auth.mjs"
 import { getTimestamp } from "../../../../tools/date.mjs"
 import Page from "../../models/page.mjs"
@@ -243,7 +244,7 @@ export default (app) => {
     if (!file) throw "Unknown file";
     if(file.shareKey && res.locals.shareKey != file.shareKey) return res.status(403).json({ error: `You do not have access to this image` });
 
-    res.setHeader('Content-disposition', `attachment; filename=${file.name}`);
+    res.setHeader('Content-disposition', contentDisposition(file.name));
     res.setHeader('Content-Type', file.mime);
     res.setHeader('Content-Length', file.size);
 
