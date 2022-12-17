@@ -34,7 +34,7 @@ export default (app) => {
     let page = new Page(id, res.locals.user)
     page.tag("user-doc")
     page.acl = "r:private;w:private"
-    res.json(page.toObj())
+    res.json(page.toObj(res.locals.user))
   })
 
   route.get("/exists", (req, res, next) => {
