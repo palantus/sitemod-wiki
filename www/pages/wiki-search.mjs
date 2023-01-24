@@ -79,7 +79,6 @@ class Element extends HTMLElement {
     if(q == this.lastQuery) return;
     this.lastQuery = q;
     this.shadowRoot.querySelector('input').value = q;
-    //this.shadowRoot.querySelector("table-paging").page = 1
     this.clearAndRefreshData();
   }
 
