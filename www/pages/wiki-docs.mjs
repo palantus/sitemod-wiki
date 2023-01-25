@@ -4,6 +4,7 @@ import {goto} from "/system/core.mjs"
 import api from "/system/api.mjs"
 import "/components/field-ref.mjs"
 import {on, off} from "/system/events.mjs"
+import {userPermissions} from "/system/user.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/action-bar-menu.mjs"
@@ -31,8 +32,8 @@ template.innerHTML = `
   </style>
 
   <action-bar id="action-bar" class="hidden">
-      <action-bar-item class="hidden" id="new-btn">New personal</action-bar-item>
-      <action-bar-item id="options-menu" class="hidden">
+      <action-bar-item id="new-btn">New personal</action-bar-item>
+      <action-bar-item id="options-menu">
         <action-bar-menu label="Help">
           <p>Add the tag "doc" to any shared wiki page, to make it appear in shared documents. If you add it to a private wiki page, it will appear among your documents.</p>
         </action-bar-menu>
@@ -74,6 +75,10 @@ class Element extends HTMLElement {
     this.refreshData = this.refreshData.bind(this);
 
     this.shadowRoot.getElementById("new-btn").addEventListener("click", () => api.post("wiki/new-private-document").then(p => goto(`/wiki/${p.id}`)))
+
+    userPermissions().then(permissions => {
+      this.shadowRoot.getElementById("action-bar").classList.toggle("hidden", !permissions.includes("wiki.create"))
+    })
   }
 
   async refreshData(){
