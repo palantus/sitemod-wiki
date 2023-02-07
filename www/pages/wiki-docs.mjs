@@ -8,6 +8,7 @@ import {userPermissions} from "/system/user.mjs"
 import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/action-bar-menu.mjs"
+import { showDialog } from "/components/dialog.mjs"
 
 export let stateColors = {error: "red", timeout: "red", done: "green", ready: "blue", hold: "blue", running: "green"}
 
@@ -63,6 +64,10 @@ template.innerHTML = `
         </tbody>
     </table>
   </div>
+
+  <dialog-component title="New document" id="new-dialog">
+    <field-component label="Title"><input id="new-title"></input></field-component>
+  </dialog-component>
 `;
 
 class Element extends HTMLElement {
@@ -73,8 +78,9 @@ class Element extends HTMLElement {
     this.shadowRoot.appendChild(template.content.cloneNode(true));
 
     this.refreshData = this.refreshData.bind(this);
+    this.newClicked = this.newClicked.bind(this)
 
-    this.shadowRoot.getElementById("new-btn").addEventListener("click", () => api.post("wiki/new-private-document").then(p => goto(`/wiki/${p.id}`)))
+    this.shadowRoot.getElementById("new-btn").addEventListener("click", this.newClicked)
 
     userPermissions().then(permissions => {
       this.shadowRoot.getElementById("action-bar").classList.toggle("hidden", !permissions.includes("wiki.create"))
@@ -98,6 +104,28 @@ class Element extends HTMLElement {
         <td><field-ref ref="/wiki/${p.id}">${p.title || p.id}</field-ref></td>
       </tr>
     `).join("")
+  }
+
+  newClicked(){
+    let dialog = this.shadowRoot.querySelector("#new-dialog")
+
+    showDialog(dialog, {
+      show: () => this.shadowRoot.querySelector("#new-title").focus(),
+      ok: async (val) => {
+        let id = await api.post("wiki/generate-id", {id: val.title, ensureNew: true})
+        await api.patch(`wiki/${id}`, {id, ...val, access: "private", tags: ["doc"]})
+        goto(`/wiki/${id}`)
+      },
+      validate: (val) => 
+          !val.title ? "Please fill out title"
+        : true,
+      values: () => {return {
+        title: this.shadowRoot.getElementById("new-title").value
+      }},
+      close: () => {
+        this.shadowRoot.querySelectorAll("field-component input").forEach(e => e.value = '')
+      }
+    })
   }
 
   connectedCallback() {

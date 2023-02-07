@@ -28,15 +28,6 @@ export default (app) => {
     res.json(newId)
   })
 
-  route.post("/new-private-document", noGuest, (req, res, next) => {
-    if (!validateAccess(req, res, { permission: "wiki.edit" })) return;
-    let id = `doc-${nextNum("wiki-doc")}`
-    let page = new Page(id, res.locals.user)
-    page.tag("user-doc")
-    page.acl = "r:private;w:private"
-    res.json(page.toObj(res.locals.user))
-  })
-
   route.get("/exists", (req, res, next) => {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     let id = Page.createId(req.query.id)
