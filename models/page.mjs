@@ -3,6 +3,7 @@ import { getTimestamp } from "../../../tools/date.mjs"
 import Showdown from "showdown"
 import ACL from "../../../models/acl.mjs"
 import DataType from "../../../models/datatype.mjs";
+import Share from "../../../models/share.mjs";
 
 class Page extends Entity {
   
@@ -110,6 +111,7 @@ class Page extends Entity {
       }
     })
     this.rels.revision?.forEach(e => Page.from(e).delete())
+    this.rels.share?.forEach(s => Share.from(s).delete())
     super.delete();
   }
 
