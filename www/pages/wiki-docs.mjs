@@ -30,6 +30,7 @@ template.innerHTML = `
 
   <action-bar id="action-bar" class="hidden">
       <action-bar-item id="new-btn">New document</action-bar-item>
+      <action-bar-item id="search-btn">Search</action-bar-item>
       <action-bar-item id="options-menu">
         <action-bar-menu label="Help">
           <p>Add the tag "doc" to any shared wiki page, to make it appear in shared documents. If you add it to a private wiki page, it will appear among your documents.</p>
@@ -60,6 +61,7 @@ class Element extends HTMLElement {
     this.newClicked = this.newClicked.bind(this)
 
     this.shadowRoot.getElementById("new-btn").addEventListener("click", this.newClicked)
+    this.shadowRoot.getElementById("search-btn").addEventListener("click", () => goto("/wiki-search"))
 
     userPermissions().then(permissions => {
       this.shadowRoot.getElementById("action-bar").classList.toggle("hidden", !permissions.includes("wiki.create"))
