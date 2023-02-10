@@ -9,6 +9,7 @@ import Page from "../../models/page.mjs"
 import Setup from "../../models/setup.mjs";
 import MySetup from "../../models/setup-mine.mjs";
 import { uuidv4 } from "../../../../www/libs/uuid.mjs"
+import User from "../../../../models/user.mjs";
 
 export default (app) => {
 
@@ -52,7 +53,9 @@ export default (app) => {
       private: !!p.acl?.startsWith("r:private"), 
       tags: p.userTags, 
       mine: p.related.owner?._id == res.locals.user._id,
-      modified: p.modified
+      modified: p.modified,
+      owner: User.from(p.related.owner)?.toObjSimple() || null,
+      author: User.from(p.related.author)?.toObjSimple() || null
     })))
   });
 

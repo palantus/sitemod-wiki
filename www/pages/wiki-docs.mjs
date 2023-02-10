@@ -71,7 +71,7 @@ class Element extends HTMLElement {
                                                                  .sort((a, b) => (a.title||a.id)?.toLowerCase() < (b.title||b.id)?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
       <div class="doc-container">
-        <field-ref ref="/wiki/${p.id}">${p.title || p.id}</field-ref>
+        <field-ref ref="/wiki/${p.id}" title="Last modified by ${p.author?.name||"Unknown"} at ${p.modified?.replace("T", " ").substring(0, 16)}">${p.title || p.id}</field-ref>
       </div>
     `).join("")
 
@@ -79,7 +79,7 @@ class Element extends HTMLElement {
                                                                  .sort((a, b) => (a.title||a.id)?.toLowerCase() < (b.title||b.id)?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
       <div class="doc-container">
-        <field-ref ref="/wiki/${p.id}">${p.title || p.id}</field-ref>
+        <field-ref ref="/wiki/${p.id}" title="Owned by ${p.owner?.name||"Unknown"} and last modified by ${p.author?.name||"Unknown"} at ${p.modified?.replace("T", " ").substring(0, 16)}">${p.title || p.id}</field-ref>
       </div>
     `).join("")
   }
