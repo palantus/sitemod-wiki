@@ -9,6 +9,7 @@ import "/components/action-bar.mjs"
 import "/components/action-bar-item.mjs"
 import "/components/action-bar-menu.mjs"
 import { showDialog } from "/components/dialog.mjs"
+import {getUser} from "/system/user.mjs"
 
 export let stateColors = {error: "red", timeout: "red", done: "green", ready: "blue", hold: "blue", running: "green"}
 
@@ -66,12 +67,13 @@ class Element extends HTMLElement {
   }
 
   async refreshData(){
+    let me = await getUser();
     let results = await api.get(`wiki/search?filter=tag:doc`)
     this.shadowRoot.getElementById("private").innerHTML = results.filter(p => p.mine)
                                                                  .sort((a, b) => (a.title||a.id)?.toLowerCase() < (b.title||b.id)?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
       <div class="doc-container">
-        <field-ref ref="/wiki/${p.id}" title="Last modified by ${p.author?.name||"Unknown"} at ${p.modified?.replace("T", " ").substring(0, 16)}">${p.title || p.id}</field-ref>
+        <field-ref ref="/wiki/${p.id}" title="Last modified by ${p.author?.id == me.id ? "you" : p.author?.name||"Unknown"} at ${p.modified?.replace("T", " ").substring(0, 16)}">${p.title || p.id}</field-ref>
       </div>
     `).join("")
 
