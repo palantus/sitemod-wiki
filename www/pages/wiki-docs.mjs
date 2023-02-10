@@ -22,14 +22,9 @@ template.innerHTML = `
         position: relative;
         padding: 10px;
     }
-    table{
-      width: 100%;
+    div.doc-container{
+      margin-bottom: 3px;
     }
-    table thead tr{
-      border-bottom: 1px solid gray;
-    }
-
-    table thead th:nth-child(1){width: 150px}
   </style>
 
   <action-bar id="action-bar" class="hidden">
@@ -42,27 +37,10 @@ template.innerHTML = `
   </action-bar>
   <div id="container">
     <h2>My documents:</h2>
-    <table>
-        <thead>
-            <tr>
-              <th>Title</th>
-            </tr>
-        </thead>
-        <tbody id="private">
-        </tbody>
-    </table>
-
+    <div id="private"></div>
     <br>
-    <h2>Documents shared with me:</h2>
-    <table>
-        <thead>
-            <tr>
-              <th>Title</th>
-            </tr>
-        </thead>
-        <tbody id="shared">
-        </tbody>
-    </table>
+    <h2>Shared with me:</h2>
+    <div id="shared"></div>
   </div>
 
   <dialog-component title="New document" id="new-dialog">
@@ -92,17 +70,17 @@ class Element extends HTMLElement {
     this.shadowRoot.getElementById("private").innerHTML = results.filter(p => p.mine)
                                                                  .sort((a, b) => (a.title||a.id)?.toLowerCase() < (b.title||b.id)?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
-      <tr class="result">
-        <td><field-ref ref="/wiki/${p.id}">${p.title || p.id}</field-ref></td>
-      </tr>
+      <div class="doc-container">
+        <field-ref ref="/wiki/${p.id}">${p.title || p.id}</field-ref>
+      </div>
     `).join("")
 
     this.shadowRoot.getElementById("shared").innerHTML = results.filter(p => !p.mine)
                                                                  .sort((a, b) => (a.title||a.id)?.toLowerCase() < (b.title||b.id)?.toLowerCase() ? -1 : 1)
                                                                  .map(p => `
-      <tr class="result">
-        <td><field-ref ref="/wiki/${p.id}">${p.title || p.id}</field-ref></td>
-      </tr>
+      <div class="doc-container">
+        <field-ref ref="/wiki/${p.id}">${p.title || p.id}</field-ref>
+      </div>
     `).join("")
   }
 
