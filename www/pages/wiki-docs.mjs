@@ -33,7 +33,7 @@ template.innerHTML = `
   </style>
 
   <action-bar id="action-bar" class="hidden">
-      <action-bar-item id="new-btn">New personal</action-bar-item>
+      <action-bar-item id="new-btn">New document</action-bar-item>
       <action-bar-item id="options-menu">
         <action-bar-menu label="Help">
           <p>Add the tag "doc" to any shared wiki page, to make it appear in shared documents. If you add it to a private wiki page, it will appear among your documents.</p>
@@ -41,7 +41,7 @@ template.innerHTML = `
       </action-bar-item>
   </action-bar>
   <div id="container">
-    <h2>Mine:</h2>
+    <h2>My documents:</h2>
     <table>
         <thead>
             <tr>
@@ -53,7 +53,7 @@ template.innerHTML = `
     </table>
 
     <br>
-    <h2>Shared:</h2>
+    <h2>Documents shared with me:</h2>
     <table>
         <thead>
             <tr>
