@@ -4,6 +4,7 @@ import Showdown from "showdown"
 import ACL from "../../../models/acl.mjs"
 import DataType from "../../../models/datatype.mjs";
 import Share from "../../../models/share.mjs";
+import User from "../../../models/user.mjs";
 
 class Page extends Entity {
   
@@ -134,6 +135,10 @@ class Page extends Entity {
 
   get revisions(){
     return this.rels.revision?.map(r => Page.from(r)) || []
+  }
+
+  get author(){
+    return User.from(this.related.author)
   }
 
   toObj(user){

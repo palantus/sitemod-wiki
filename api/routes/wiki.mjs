@@ -39,13 +39,50 @@ export default (app) => {
   route.get('/search', function (req, res, next) {
     if (!validateAccess(req, res, { permission: "wiki.read" })) return;
     if (!req.query.filter || typeof req.query.filter !== "string") return []
-    let filter = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -:]/g, '') //Remove invalid chars
-    let pages;
-    if(filter.startsWith("tag:")){
-      pages = query.type(Page).tag("wiki").not(query.tag("revision")).tag(`user-${filter.substring(4)}`).all
+    let filterString = req.query.filter.replace(/[^a-zA-ZæøåÆØÅ0-9 -:]/g, '') //Remove invalid chars
+    let pages = null;
+
+    if(filterString){
+      for(let filter of filterString.toLowerCase().split(" ")){
+        let parts = filter.split(":")
+        switch(parts[0]){
+          case "tag":
+            if(parts.length < 2 || !parts[1]) pages = []
+            else if(!pages) pages = query.type(Page).tag("wiki").not(query.tag("revision")).tag(`user-${parts[1]}`).all;
+            else pages = pages.filter(p => p.tags.includes(`user-${parts[1]}`))
+            break;
+
+          case "permission": {
+            if(parts.length < 2 || !parts[1]) { pages = []; break; }
+            let users = User.activeByPermission(parts[1]).map(u => u._id);
+            if(users.length < 1){ pages = []; break; }
+            if(!pages) pages = query.type(Page).tag("wiki").not(query.tag("revision")).relatedTo(users, "author").all;
+            else pages = pages.filter(p => !!users.find(id => id == p.author._id))
+            break;
+          }
+          
+          case "role": {
+            if(parts.length < 2 || !parts[1]) { pages = []; break; }
+            let users = User.activeByRole(parts[1]).map(u => u._id);
+            if(users.length < 1){ pages = []; break; }
+            if(!pages) pages = query.type(Page).tag("wiki").not(query.tag("revision")).relatedTo(users, "author").all;
+            else pages = pages.filter(p => !!users.find(id => id == p.author._id))
+            break;
+          }
+
+          case "*":
+            pages = pages ?? query.type(Page).tag("wiki").not(query.tag("revision")).all
+            break;
+
+          default:
+            if(pages) pages = pages.filter(p => p.body?.toLowerCase().includes(filter) || p.title?.toLowerCase().includes(filter) || p.tags?.includes(`user-${filter}`))
+            else pages = Page.search(`tag:wiki !tag:revision (prop:"body~${filter}"|prop:"title~${filter}"|tag:"user-${filter}")`)
+        }
+      }
     } else {
-      pages = Page.search(`tag:wiki !tag:revision (${filter.split(" ").map(w => `(prop:"body~${w}"|prop:"title~${w}"|tag:"user-${w}")`).join(" ")})`)
+      pages = []
     }
+     
     pages = pages.filter(p => p.validateAccess(res, 'r', false))
     res.json(pages.map(p => ({
       id: p.id, 
