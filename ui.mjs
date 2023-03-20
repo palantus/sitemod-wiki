@@ -1,4 +1,4 @@
-export let menu = [,
+export let menu = [
   {
     title: "Me",
     public: true,
