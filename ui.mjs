@@ -1,7 +1,6 @@
 export let menu = [
   {
     title: "Me",
-    public: true,
     items: [
       {title: "Documents", path: "/wiki-docs", permission: "wiki.edit"},
       {title: "Personal Wiki", path: "/wiki/index-private", permission: "wiki.edit"}
