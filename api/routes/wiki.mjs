@@ -10,6 +10,8 @@ import Setup from "../../models/setup.mjs";
 import MySetup from "../../models/setup-mine.mjs";
 import { uuidv4 } from "../../../../www/libs/uuid.mjs"
 import User from "../../../../models/user.mjs";
+import DataType from "../../../../models/datatype.mjs";
+import ACL from "../../../../models/acl.mjs";
 
 export default (app) => {
 
@@ -182,6 +184,11 @@ export default (app) => {
         case "public": wiki.acl = "r:public;w:private"; break;
         case "shared": wiki.acl = "r:shared;w:private"; break;
         case "private": wiki.acl = "r:private;w:private"; break;
+      }
+
+      if(req.body.acl){
+        let acl = new ACL(wiki, DataType.lookup("wiki"))
+        acl.handlePatch(req.body.acl)
       }
 
       if(!wiki.related.owner){
