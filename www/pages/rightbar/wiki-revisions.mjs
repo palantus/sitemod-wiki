@@ -1,12 +1,12 @@
 const elementName = 'rightbar-wiki-revisions-component'
 
-import api from "/system/api.mjs"
-import "/components/field.mjs"
-import {on, off} from "/system/events.mjs"
-import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
-import {goto, state} from "/system/core.mjs"
-import { confirmDialog } from "/components/dialog.mjs"
-import { getPageIdFromPath } from "/pages/wiki.mjs"
+import api from "../../system/api.mjs"
+import "../../components/field.mjs"
+import {on, off} from "../../system/events.mjs"
+import { toggleInRightbar } from "../../pages/rightbar/rightbar.mjs"
+import {goto, state} from "../../system/core.mjs"
+import { confirmDialog } from "../../components/dialog.mjs"
+import { getPageIdFromPath } from "../../pages/wiki.mjs"
 
 const template = document.createElement('template');
 template.innerHTML = `

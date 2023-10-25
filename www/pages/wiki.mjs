@@ -1,23 +1,23 @@
 const elementName = 'wiki-page'
 
-import {state, goto, apiURL, setPageTitle} from "/system/core.mjs"
-import {isSignedIn, user} from "/system/user.mjs"
-import {on, off, fire} from "/system/events.mjs"
-import api from "/system/api.mjs"
-import {userPermissions} from "/system/user.mjs"
-import "/components/action-bar.mjs"
-import "/components/action-bar-item.mjs"
-import "/components/field-edit.mjs"
-import "/components/field-list.mjs"
-import "/components/action-bar-menu.mjs"
-import "/components/acl.mjs"
+import {state, goto, apiURL, setPageTitle} from "../system/core.mjs"
+import {isSignedIn, user} from "../system/user.mjs"
+import {on, off, fire} from "../system/events.mjs"
+import api from "../system/api.mjs"
+import {userPermissions} from "../system/user.mjs"
+import "../components/action-bar.mjs"
+import "../components/action-bar-item.mjs"
+import "../components/field-edit.mjs"
+import "../components/field-list.mjs"
+import "../components/action-bar-menu.mjs"
+import "../components/acl.mjs"
 
-import "/libs/inline-attachment.js"
-import "/libs/codemirror-4.inline-attachment.js"
+import "../libs/inline-attachment.js"
+import "../libs/codemirror-4.inline-attachment.js"
 
-import "/libs/easymde.min.js"
-import { confirmDialog, alertDialog, showDialog, promptDialog } from "/components/dialog.mjs"
-import { toggleInRightbar } from "/pages/rightbar/rightbar.mjs"
+import "../libs/easymde.min.js"
+import { confirmDialog, alertDialog, showDialog, promptDialog } from "../components/dialog.mjs"
+import { toggleInRightbar } from "../pages/rightbar/rightbar.mjs"
 
 const template = document.createElement('template');
 template.innerHTML = `

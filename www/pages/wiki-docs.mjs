@@ -1,15 +1,15 @@
 const elementName = 'wiki-docs-page'
 
-import {goto} from "/system/core.mjs"
-import api from "/system/api.mjs"
-import "/components/field-ref.mjs"
-import {on, off} from "/system/events.mjs"
-import {userPermissions} from "/system/user.mjs"
-import "/components/action-bar.mjs"
-import "/components/action-bar-item.mjs"
-import "/components/action-bar-menu.mjs"
-import { showDialog } from "/components/dialog.mjs"
-import {getUser} from "/system/user.mjs"
+import {goto} from "../system/core.mjs"
+import api from "../system/api.mjs"
+import "../components/field-ref.mjs"
+import {on, off} from "../system/events.mjs"
+import {userPermissions} from "../system/user.mjs"
+import "../components/action-bar.mjs"
+import "../components/action-bar-item.mjs"
+import "../components/action-bar-menu.mjs"
+import { showDialog } from "../components/dialog.mjs"
+import {getUser} from "../system/user.mjs"
 
 export let stateColors = {error: "red", timeout: "red", done: "green", ready: "blue", hold: "blue", running: "green"}
 

@@ -1,5 +1,5 @@
-import {goto} from "/system/core.mjs"
-import {Command, removeKeywordsFromQuery} from "/pages/tools/command-palette/command.mjs"
+import {goto} from "../system/core.mjs"
+import {Command, removeKeywordsFromQuery} from "../pages/tools/command-palette/command.mjs"
 
 export class OpenWikiPage extends Command{
   static keywords = [

@@ -1,9 +1,9 @@
 const elementName = 'wiki-search-page'
 
-import {state, pushStateQuery} from "/system/core.mjs"
-import api from "/system/api.mjs"
-import "/components/field-ref.mjs"
-import {on, off} from "/system/events.mjs"
+import {state, pushStateQuery} from "../system/core.mjs"
+import api from "../system/api.mjs"
+import "../components/field-ref.mjs"
+import {on, off} from "../system/events.mjs"
 
 export let stateColors = {error: "red", timeout: "red", done: "green", ready: "blue", hold: "blue", running: "green"}
 
