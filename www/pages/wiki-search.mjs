@@ -1,6 +1,6 @@
 const elementName = 'wiki-search-page'
 
-import {state, pushStateQuery} from "../system/core.mjs"
+import {state, pushStateQuery, stylesheets} from "../system/core.mjs"
 import api from "../system/api.mjs"
 import "../components/field-ref.mjs"
 import {on, off} from "../system/events.mjs"
@@ -9,8 +9,6 @@ export let stateColors = {error: "red", timeout: "red", done: "green", ready: "b
 
 const template = document.createElement('template');
 template.innerHTML = `
-  <link rel='stylesheet' href='/css/global.css'>
-  <link rel='stylesheet' href='/css/searchresults.css'>
   <style>
     #container{
         /*padding-top: 55px;*/
@@ -48,7 +46,8 @@ class Element extends HTMLElement {
   constructor() {
     super();
 
-    this.attachShadow({ mode: 'open' });
+    this.attachShadow({ mode: 'open' })
+        .adoptedStyleSheets = [stylesheets.global, stylesheets.searchresults];
     this.shadowRoot.appendChild(template.content.cloneNode(true));
 
     this.clearAndRefreshData = this.clearAndRefreshData.bind(this);
