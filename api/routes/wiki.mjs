@@ -281,10 +281,8 @@ export default (app) => {
     res.json({success: true})
   })
 
-  route.get('/image/:id', function (req, res, next) {
-    if (!validateAccess(req, res, { permission: "wiki.read" })) return;
-    let hash = sanitize(req.params.id)
-    let file = query.tag("wiki-image").prop("hash", hash).first
+  route.get('/image/:id', (req, res) => {
+    let file = query.tag("wiki-image").prop("hash", req.params.id).first
     if (!file) throw "Unknown file";
     if(file.shareKey && res.locals.shareKey != file.shareKey) return res.status(403).json({ error: `You do not have access to this image` });
 
