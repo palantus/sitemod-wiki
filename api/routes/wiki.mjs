@@ -248,9 +248,13 @@ export default (app) => {
 
     let file = query.tag("wiki-image").prop("hash", f.md5).first
 
-    if (!file) {
+    if (file) {
+      wiki.rel(file, "image")
+      wiki.convertBody(); // Update sharekey in image url's
+      res.json({ hash: file.hash })
+    } else {
       let shareKey = uuidv4();
-      file = new Entity().tag("wiki-image")
+      new Entity().tag("wiki-image")
         .prop("name", f.name)
         .prop("size", f.size)
         .prop("hash", f.md5)
@@ -258,10 +262,12 @@ export default (app) => {
         .prop("shareKey", shareKey)
         .prop("timestamp", getTimestamp())
         .setBlob(f.data)
+        .then(f => {
+          wiki.rel(f, "image")
+          wiki.convertBody(); // Update sharekey in image url's
+          res.json({ hash: f.hash })
+        })
     }
-
-    wiki.rel(file, "image")
-    res.json({ hash: file.hash })
   })
 
   route.delete("/:id/revisions", function (req, res, next) {
