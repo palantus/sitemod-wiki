@@ -62,7 +62,7 @@ class Page extends Entity {
     this.html = converter.makeHtml(bodyConverted)
                          .replace(/(\/img\/([\da-zA-Z]+))/g, (src, uu, id) => {
                             //Replace image urls
-                            let image = this.rels.image.find(i => i.hash == id)
+                            let image = this.rels.image?.find(i => i.hash == id)
                             return `${global.sitecore.apiURL}/wiki/image/${id}?shareKey=${image?.shareKey || ""}`
                           });
   }
