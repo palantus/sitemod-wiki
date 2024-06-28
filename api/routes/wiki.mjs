@@ -59,7 +59,7 @@ export default (app) => {
             let users = User.activeByPermission(parts[1]).map(u => u._id);
             if(users.length < 1){ pages = []; break; }
             if(!pages) pages = query.type(Page).tag("wiki").not(query.tag("revision")).relatedTo(users, "author").all;
-            else pages = pages.filter(p => !!users.find(id => id == p.author._id))
+            else pages = pages.filter(p => !!users.find(id => id == p.author?._id))
             break;
           }
           
@@ -68,7 +68,7 @@ export default (app) => {
             let users = User.activeByRole(parts[1]).map(u => u._id);
             if(users.length < 1){ pages = []; break; }
             if(!pages) pages = query.type(Page).tag("wiki").not(query.tag("revision")).relatedTo(users, "author").all;
-            else pages = pages.filter(p => !!users.find(id => id == p.author._id))
+            else pages = pages.filter(p => !!users.find(id => id == p.author?._id))
             break;
           }
 
